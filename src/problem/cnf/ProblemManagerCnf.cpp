@@ -181,7 +181,7 @@ void ProblemManagerCnf::displayStat(std::ostream &out, std::string startLine) {
     if (c.size() == 3) nbTer++;
     if (c.size() > 3) nbMoreThree++;
   }
-
+  out << startLine << "Number of selected: " << m_selected.size()<<"\n";
   out << startLine << "Number of variables: " << m_nbVar << "\n";
   out << startLine << "Number of clauses: " << m_clauses.size() << "\n";
   out << startLine << "Number of binary clauses: " << nbBin << "\n";

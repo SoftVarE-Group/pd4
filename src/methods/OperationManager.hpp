@@ -54,7 +54,8 @@ class Operation {
 
     if (meth == "ddnnf-compiler")
       return new DecisionDNNFOperation<T, Node<T> *>(problem, specs, solver);
-
+    if (meth == "proj-ddnnf-compiler")
+      return new DecisionDNNFOperation<T, Node<T> *>(problem, specs, solver);
     throw(FactoryException("Cannot create a Operation", __FILE__, __LINE__));
   }  // makeOperationManager
 

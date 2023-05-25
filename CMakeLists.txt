@@ -10,7 +10,7 @@ add_custom_target(clean-cmake-files
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Release)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
@@ -42,7 +42,6 @@ if(${BUILD_MODE} EQUAL 1)
 
   # PROFILE
   message("Debug mode activated")
-  set(CMAKE_CXX_COMPILER /usr/bin/g++-8 CACHE PATH "" FORCE)
   
   set(CMAKE_BUILD_TYPE Debug)
   target_compile_options(d4_debug PUBLIC -std=c++17 -Wall -g -pg -O3 -Wno-class-memaccess -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses -D DEBUG -DCMAKE_EXPORT_COMPILE_COMMANDS=1)
@@ -76,12 +75,14 @@ elseif(${BUILD_MODE} EQUAL 3)
   install (TARGETS d4 DESTINATION lib)
   install(FILES ${HEADER} DESTINATION include/${CMAKE_PROJECT_NAME})
 else()  
+
+set(CMAKE_BUILD_TYPE Debug)
 # create an executable
 add_executable(d4 ${SRCS} ${HEADERS})
 
 message("Classical mode activated")
-target_compile_options(d4 PUBLIC -std=c++17 -Wall -O3 -Wno-class-memaccess -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses)
-target_link_libraries (d4 -lz -O3 -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
+target_compile_options(d4 PUBLIC -Wall -Wno-class-memaccess -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses)
+target_link_libraries (d4 -lz -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/d4
   DESTINATION bin
