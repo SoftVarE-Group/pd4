@@ -168,5 +168,21 @@ class BinaryDeterministicOrNode : public Node<T> {
     p->header.stamp = globalStamp;
     return (unsigned)p->nbModels;
   }  // printNNF
+     //
+  static unsigned printNNFNorm(Node<T> *node, unsigned (**func)(),
+                           std::ostream &out, unsigned &idx,
+                           unsigned globalStamp,NormMap& norm) {
+    auto *p = reinterpret_cast<BinaryDeterministicOrNode *>(node);
+    if (p->header.stamp == globalStamp) return (unsigned)p->nbModels;
+    p->nbModels = idx++;
+
+    out << "o " << (unsigned)p->nbModels << " 0\n";
+    p->l.printNNFNorm((unsigned)p->nbModels, p->data, func, out, idx, globalStamp,norm);
+    p->r.printNNFNorm((unsigned)p->nbModels, &p->data[p->l.nbUnits + p->l.nbFree],
+                  func, out, idx, globalStamp,norm);
+
+    p->header.stamp = globalStamp;
+    return (unsigned)p->nbModels;
+  }  // printNNF
 };
 }  // namespace d4

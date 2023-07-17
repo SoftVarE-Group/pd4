@@ -32,7 +32,7 @@
 namespace d4 {
 namespace po = boost::program_options;
 class PartitioningHeuristicStatic : public PartitioningHeuristic {
- protected:
+protected:
   WrapperSolver &m_s;
   SpecManagerCnf &m_om;
   EquivExtractor m_em;
@@ -47,10 +47,10 @@ class PartitioningHeuristicStatic : public PartitioningHeuristic {
   bool m_reduceFormula;
   bool m_equivSimp;
 
- protected:
+protected:
   virtual void init(std::ostream &out) = 0;
 
- protected:
+protected:
   PartitioningHeuristicStatic(po::variables_map &vm, WrapperSolver &s,
                               SpecManager &om, std::ostream &out);
 
@@ -58,7 +58,7 @@ class PartitioningHeuristicStatic : public PartitioningHeuristic {
                               SpecManager &om, int nbClause, int nbVar,
                               int sumSize, std::ostream &out);
 
- public:
+public:
   virtual ~PartitioningHeuristicStatic();
 
   static PartitioningHeuristicStatic *makePartitioningHeuristicStatic(
@@ -70,5 +70,6 @@ class PartitioningHeuristicStatic : public PartitioningHeuristic {
 
   virtual bool isInitialized() { return true; }
   virtual bool isStillOk(std::vector<Var> &component) = 0;
+  SpecManagerCnf &specs() { return m_om; }
 };
-}  // namespace d4
+} // namespace d4

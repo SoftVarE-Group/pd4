@@ -163,5 +163,27 @@ class DecomposableAndNode : public Node<T> {
     p->header.stamp = globalStamp;
     return (unsigned)p->nbModels;
   }  // printNNF
+     //
+  static unsigned printNNFNorm(Node<T> *node, unsigned (**func)(),
+                           std::ostream &out, unsigned &idx,
+                           unsigned globalStamp,NormMap& norm) {
+    auto *p = reinterpret_cast<DecomposableAndNode *>(node);
+    if (p->header.stamp == globalStamp) return (unsigned)p->nbModels;
+    p->nbModels = idx++;
+
+    out << "a " << (unsigned)p->nbModels << " 0\n";
+
+    for (unsigned i = 0; i < p->size; i++) {
+      unsigned sidx =
+          reinterpret_cast<unsigned (**)(Node<T> *, unsigned (**func)(),
+                                         std::ostream &, unsigned &, unsigned,NormMap&)>(
+              func)[p->sons[i]->header.typeNode](p->sons[i], func, out, idx,
+                                                 globalStamp,norm);
+      out << (unsigned)p->nbModels << " " << sidx << " 0\n";
+    }
+
+    p->header.stamp = globalStamp;
+    return (unsigned)p->nbModels;
+  }  // printNNF
 };
 }  // namespace d4

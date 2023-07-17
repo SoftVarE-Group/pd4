@@ -140,8 +140,26 @@ class DecisionDNNFOperation : public Operation<T, U> {
     if (vm.count("dump-ddnnf")) {
       std::ofstream outFile;
       std::string fileName = vm["dump-ddnnf"].as<std::string>();
-      outFile.open(fileName);
-      m_nodeManager->printNNF(result, outFile);
+      outFile.open(fileName); 
+      std::string meth = vm["method"].as<std::string>();
+      if(meth=="proj-ddnnf-compiler"){
+          NormMap map = {};
+          map.resize(m_problem->getNbVar()*2+1);
+          for(Var i =0;i< m_problem->getNbSelectedVar();i++){
+              Var org = m_problem->getSelectedVar()[i];
+              unsigned p_org =  Lit::makeLit(org,true).m_x;
+              unsigned n_org =  Lit::makeLit(org,false).m_x;
+              map[p_org] = Lit::makeLit(i+1,true);
+              map[n_org] = Lit::makeLit(i+1,false);
+          }
+          m_nodeManager->printNNF(result, outFile,map);
+
+      }
+      else{
+
+        m_nodeManager->printNNF(result, outFile);
+
+      }
       outFile.close();
     } else if (vm.count("query")) {
       std::vector<Lit> query;

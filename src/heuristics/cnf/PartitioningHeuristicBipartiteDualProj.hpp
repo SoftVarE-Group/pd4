@@ -16,27 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+
 #include <boost/program_options.hpp>
-#include <src/problem/ProblemTypes.hpp>
-#include <src/solvers/ActivityManager.hpp>
-#include <src/solvers/WrapperSolver.hpp>
-#include <src/specs/SpecManager.hpp>
-#include <vector>
+
+#include "PartitioningHeuristicBipartite.hpp"
+#include "src/hyperGraph/HyperGraph.hpp"
+#include "src/hyperGraph/HyperGraphExtractorDual.hpp"
+#include "src/partitioner/PartitionerManager.hpp"
+#include "src/specs/cnf/SpecManagerCnf.hpp"
 
 namespace d4 {
 namespace po = boost::program_options;
-class ScoringMethod {
+class PartitioningHeuristicBipartiteDualProj
+    : public PartitioningHeuristicBipartite {
 public:
-  static ScoringMethod *makeScoringMethod(po::variables_map &vm, SpecManager &p,
-                                          ActivityManager &am,
-                                          std::ostream &out);
-  virtual ~ScoringMethod() { ; }
-  virtual double computeScore(Var v) = 0;
-  virtual void postProcess(Var v) {}
+  PartitioningHeuristicBipartiteDualProj(po::variables_map &vm,
+                                         WrapperSolver &s, SpecManager &om,
+                                         std::ostream &out);
 
-  Var selectVariable(std::vector<Var> &vars, SpecManager &s,
-                     std::vector<bool> &isDecisionVariable);
-
-  Var selectVariable(std::vector<Var> &vars, SpecManager &s, ProjInfo &info);
+  PartitioningHeuristicBipartiteDualProj(po::variables_map &vm,
+                                         WrapperSolver &s, SpecManager &om,
+                                         int nbClause, int nbVar, int sumSize,
+                                         std::ostream &out);
 };
 } // namespace d4

@@ -20,13 +20,15 @@
 #include "../ProblemManager.hpp"
 #include "../ProblemTypes.hpp"
 #include "src/solvers/WrapperSolver.hpp"
+#include "src/utils/IDIDFunc.hpp"
 
 namespace d4 {
 class ProblemManagerCnf : public ProblemManager {
- private:
+private:
   std::vector<std::vector<Lit>> m_clauses;
+  IDIDFunc m_projMap;
 
- public:
+public:
   ProblemManagerCnf();
   ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
                     std::vector<double> &weightVar, std::vector<Var> &selected);
@@ -43,4 +45,4 @@ class ProblemManagerCnf : public ProblemManager {
   ProblemManager *getUnsatProblem() override;
   ProblemManager *getConditionedFormula(std::vector<Lit> &units) override;
 };
-}  // namespace d4
+} // namespace d4

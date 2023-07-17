@@ -47,11 +47,16 @@ ScoringMethod *ScoringMethod::makeScoringMethod(po::variables_map &vm,
     try {
       SpecManagerCnf &ps = dynamic_cast<SpecManagerCnf &>(p);
 
-      if (meth == "mom") return new ScoringMethodMom(ps);
-      if (meth == "dlcs") return new ScoringMethodDlcs(ps);
-      if (meth == "vsids") return new ScoringMethodVsids(am);
-      if (meth == "vsads") return new ScoringMethodVsads(ps, am);
-      if (meth == "jwts") return new ScoringMethodJwts(ps);
+      if (meth == "mom")
+        return new ScoringMethodMom(ps);
+      if (meth == "dlcs")
+        return new ScoringMethodDlcs(ps);
+      if (meth == "vsids")
+        return new ScoringMethodVsids(am);
+      if (meth == "vsads")
+        return new ScoringMethodVsads(ps, am);
+      if (meth == "jwts")
+        return new ScoringMethodJwts(ps);
       return NULL;
     } catch (std::bad_cast &bc) {
       std::cerr << "bad_cast caught: " << bc.what() << '\n';
@@ -60,7 +65,7 @@ ScoringMethod *ScoringMethod::makeScoringMethod(po::variables_map &vm,
   }
 
   throw(FactoryException("Cannot create a ScoringMethod", __FILE__, __LINE__));
-}  // makeScoringMethod
+} // makeScoringMethod
 
 /**
    Select the best variable in vars and return it.
@@ -76,7 +81,8 @@ Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s,
   assert(isDecisionVariable.size() >= (unsigned)s.getNbVariable());
 
   for (auto &v : vars) {
-    if (s.varIsAssigned(v) || !isDecisionVariable[v]) continue;
+    if (s.varIsAssigned(v) || !isDecisionVariable[v])
+      continue;
 
     double current = computeScore(v);
     if (ret == var_Undef || current > bestScore) {
@@ -86,6 +92,25 @@ Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s,
   }
 
   return ret;
-}  // selectVariable
+} // selectVariable
+  //
+Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s,
+                                  ProjInfo &info) {
+  Var ret = var_Undef;
+  double bestScore = -1;
 
-}  // namespace d4
+  for (auto &v : vars) {
+    if (s.varIsAssigned(v) || !info.isProj(v))
+      continue;
+
+    double current = computeScore(v);
+    if (ret == var_Undef || current > bestScore) {
+      ret = v;
+      bestScore = current;
+    }
+  }
+
+  return ret;
+} // selectVariable
+
+} // namespace d4

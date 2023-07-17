@@ -17,14 +17,26 @@
  */
 #pragma once
 #include <boost/program_options.hpp>
+#include <ranges>
 #include <src/problem/ProblemManager.hpp>
 #include <src/problem/ProblemTypes.hpp>
 #include <vector>
 
 namespace d4 {
+struct ProjInfo {
+  int nbProjVars;
+  int nbVars;
+  auto projVars() { return std::views::iota(int(1), int(nbProjVars + 1)); }
+  auto nProjVars() {
+    return std::views::iota(int(nbProjVars + 1), int(nbVars + 1));
+  }
+  bool isProj(Var v) { return v <= nbProjVars; }
+  bool isNProj(Var v) { return !isProj(v); }
+  bool hasProj() { return nbVars != nbProjVars; }
+};
 namespace po = boost::program_options;
 class SpecManager {
- public:
+public:
   static SpecManager *makeSpecManager(po::variables_map &vm, ProblemManager &p,
                                       std::ostream &out);
 
@@ -32,9 +44,10 @@ class SpecManager {
   virtual bool litIsAssigned(Lit l) = 0;
   virtual bool litIsAssignedToTrue(Lit l) = 0;
   virtual bool varIsAssigned(Var v) = 0;
-  virtual int computeConnectedComponent(
-      std::vector<std::vector<Var>> &varConnected, std::vector<Var> &setOfVar,
-      std::vector<Var> &freeVar) = 0;
+  virtual int
+  computeConnectedComponent(std::vector<std::vector<Var>> &varConnected,
+                            std::vector<Var> &setOfVar,
+                            std::vector<Var> &freeVar) = 0;
   virtual void preUpdate(std::vector<Lit> &lits) = 0;
   virtual void postUpdate(std::vector<Lit> &lits) = 0;
   virtual void initialize(std::vector<Var> &setOfVar,
@@ -45,4 +58,4 @@ class SpecManager {
   virtual int getNbOccurrence(Lit l) = 0;
   virtual int getNbVariable() = 0;
 };
-}  // namespace d4
+} // namespace d4

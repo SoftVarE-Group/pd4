@@ -21,6 +21,7 @@
 #include <ostream>
 
 #include "PhaseSelectorDynamic.hpp"
+#include "PhaseSelectorDynamicProj.hpp"
 #include "PhaseSelectorNone.hpp"
 #include "PhaseSelectorStatic.hpp"
 
@@ -34,7 +35,7 @@ namespace d4 {
 PhaseSelectorManager::PhaseSelectorManager(
     PartitioningHeuristicStaticSingle *staticPartitioner) {
   m_staticPartitioner = staticPartitioner;
-}  // constructor
+} // constructor
 
 /**
    Create a selector manager regarding the given options.
@@ -55,6 +56,7 @@ PhaseSelectorManager *PhaseSelectorManager::makePhaseSelectorManager(
       vm["partitioning-heuristic-bipartite-phase-dynamic"].as<double>();
   std::string phase =
       vm["partitioning-heuristic-bipartite-phase"].as<std::string>();
+  std::cout << "Creating phase" << std::endl;
 
   if (phase == "none" || (limitPhase <= 0 && !dynamicPhase))
     return new PhaseSelectorNone(staticPartitioner, out);
@@ -62,7 +64,10 @@ PhaseSelectorManager *PhaseSelectorManager::makePhaseSelectorManager(
   if (!dynamicPhase)
     return new PhaseSelectorStatic(staticPartitioner, limitPhase, out);
 
+  if (staticPartitioner->specs().isProj()) {
+    return new PhaseSelectorDynamicProj(staticPartitioner, dynamicPhase, out);
+  }
   return new PhaseSelectorDynamic(staticPartitioner, dynamicPhase, out);
-}  // makePhaseSelectorManager
+} // makePhaseSelectorManager
 
-}  // namespace d4
+} // namespace d4

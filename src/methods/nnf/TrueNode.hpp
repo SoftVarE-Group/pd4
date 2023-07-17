@@ -111,5 +111,18 @@ class TrueNode : public Node<T> {
     p->header.stamp = globalStamp;
     return (unsigned)p->nbModels;
   }  // printNNF
+     //
+  static unsigned printNNFNorm(Node<T> *node, unsigned (**func)(),
+                           std::ostream &out, unsigned &idx,
+                           unsigned globalStamp,NormMap& norm) {
+    auto *p = reinterpret_cast<TrueNode *>(node);
+    if (p->header.stamp == globalStamp) return (unsigned)p->nbModels;
+    p->nbModels = idx++;
+
+    out << "t " << (unsigned)p->nbModels << " 0\n";
+
+    p->header.stamp = globalStamp;
+    return (unsigned)p->nbModels;
+  }  // printNNF
 };
 }  // namespace d4

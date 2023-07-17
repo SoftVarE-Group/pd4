@@ -23,6 +23,7 @@
 #include "Branch.hpp"
 #include "Node.hpp"
 #include "src/problem/ProblemManager.hpp"
+#include "src/methods/DataBranch.hpp"
 
 namespace d4 {
 template <class T, typename U>
@@ -138,6 +139,20 @@ class UnaryNode : public Node<T> {
 
     out << "o " << (unsigned)p->nbModels << " 0\n";
     p->b.printNNF((unsigned)p->nbModels, p->data, func, out, idx, globalStamp);
+
+    p->header.stamp = globalStamp;
+    return (unsigned)p->nbModels;
+  }  // printNNF
+     //
+  static unsigned printNNFNorm(Node<T> *node, unsigned (**func)(),
+                           std::ostream &out, unsigned &idx,
+                           unsigned globalStamp,NormMap& norm) {
+    auto *p = reinterpret_cast<UnaryNode *>(node);
+    if (p->header.stamp == globalStamp) return (unsigned)p->nbModels;
+    p->nbModels = idx++;
+
+    out << "o " << (unsigned)p->nbModels << " 0\n";
+    p->b.printNNFNorm((unsigned)p->nbModels, p->data, func, out, idx, globalStamp,norm);
 
     p->header.stamp = globalStamp;
     return (unsigned)p->nbModels;

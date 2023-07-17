@@ -32,11 +32,10 @@
 namespace d4 {
 namespace po = boost::program_options;
 class PartitioningHeuristicBipartite : public PartitioningHeuristic {
- private:
+
+protected:
   unsigned m_nbStatic;
   unsigned m_nbDynamic;
-
- protected:
   SpecManagerCnf &m_om;
   WrapperSolver &m_s;
   EquivExtractor m_em;
@@ -67,9 +66,11 @@ class PartitioningHeuristicBipartite : public PartitioningHeuristic {
                          std::vector<Lit> &unitEquiv,
                          std::vector<Var> &equivClass,
                          std::vector<std::vector<Var>> &equivVar);
+  void computeCutSetDyn(std::vector<Var> &component, std::vector<Var> &cutset);
 
- public:
-  void computeCutSet(std::vector<Var> &component, std::vector<Var> &cutSet);
+public:
+  virtual void computeCutSet(std::vector<Var> &component,
+                             std::vector<Var> &cutSet);
 
   void displayStat(std::ostream &out);
 
@@ -78,4 +79,4 @@ class PartitioningHeuristicBipartite : public PartitioningHeuristic {
            (component.size() > 10 && component.size() < 5000);
   }
 };
-}  // namespace d4
+} // namespace d4

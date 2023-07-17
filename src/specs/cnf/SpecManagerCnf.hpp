@@ -41,7 +41,7 @@ struct InfoCluster {
 };
 
 class SpecManagerCnf : public SpecManager {
- protected:
+protected:
   std::vector<std::vector<Lit>> m_clauses;
   std::vector<int> m_clausesNotBin;
   unsigned m_nbVar, m_maxSizeClause;
@@ -59,19 +59,24 @@ class SpecManagerCnf : public SpecManager {
   std::vector<Var> m_tmpVecVar;
   std::vector<int> m_idxComponent;
   std::vector<bool> m_markView;
+  std::vector<bool> m_selected;
+  bool m_isProj;
 
   inline void resetUnMark() {
-    for (auto &idx : m_mustUnMark) m_markView[idx] = false;
+    for (auto &idx : m_mustUnMark)
+      m_markView[idx] = false;
     m_mustUnMark.resize(0);
-  }  // resetUnMark
+  } // resetUnMark
 
- public:
+public:
   SpecManagerCnf(ProblemManager &p);
   ~SpecManagerCnf();
 
   int computeConnectedComponent(std::vector<std::vector<Var>> &varConnected,
                                 std::vector<Var> &setOfVar,
                                 std::vector<Var> &freeVar) override;
+  bool isSelected(Var v);
+  bool isProj();
 
   void showFormula(std::ostream &out) override;
   void showCurrentFormula(std::ostream &out) override;
@@ -84,8 +89,9 @@ class SpecManagerCnf : public SpecManager {
 
   bool isSatisfiedClause(unsigned idx);
   bool isSatisfiedClause(std::vector<Lit> &c);
-  bool isNotSatisfiedClauseAndInComponent(
-      int idx, std::vector<bool> &m_inCurrentComponent);
+  bool
+  isNotSatisfiedClauseAndInComponent(int idx,
+                                     std::vector<bool> &m_inCurrentComponent);
 
   void getCurrentClauses(std::vector<unsigned> &idxClauses,
                          std::vector<Var> &component);
@@ -119,16 +125,18 @@ class SpecManagerCnf : public SpecManager {
 
   virtual inline int getSumSizeClauses() {
     int sum = 0;
-    for (auto &cl : m_clauses) sum += cl.size();
+    for (auto &cl : m_clauses)
+      sum += cl.size();
     return sum;
-  }  // getSumSizeClauses
+  } // getSumSizeClauses
 
   inline int getNbBinaryClause(Lit l) {
     int nbBin = m_occurrence[l.intern()].nbBin;
     for (unsigned i = 0; i < m_occurrence[l.intern()].nbNotBin; i++)
-      if (getSize(m_occurrence[l.intern()].notBin[i]) == 2) nbBin++;
+      if (getSize(m_occurrence[l.intern()].notBin[i]) == 2)
+        nbBin++;
     return nbBin;
-  }  // getNbBinaryClause
+  } // getNbBinaryClause
 
   // about the clauses.
   inline int getNbUnsat(int idx) { return m_infoClauses[idx].nbUnsat; }
@@ -174,14 +182,17 @@ class SpecManagerCnf : public SpecManager {
 
   inline IteratorIdxClause getVecIdxClause(Lit l, ModeStore mode) {
     assert(l.intern() < m_occurrence.size());
-    if (mode == NT) return m_occurrence[l.intern()].getNotBinClauses();
-    if (mode == ALL) return m_occurrence[l.intern()].getClauses();
+    if (mode == NT)
+      return m_occurrence[l.intern()].getNotBinClauses();
+    if (mode == ALL)
+      return m_occurrence[l.intern()].getClauses();
     return m_occurrence[l.intern()].getBinClauses();
   }
 
   inline void showOccurenceList(std::ostream &out) {
     for (unsigned i = 0; i < m_occurrence.size(); i++) {
-      if (!m_occurrence[i].nbBin && !m_occurrence[i].nbNotBin) continue;
+      if (!m_occurrence[i].nbBin && !m_occurrence[i].nbNotBin)
+        continue;
       out << ((i & 1) ? "-" : "") << (i >> 1) << " --> [ ";
       for (unsigned j = 0; j < m_occurrence[i].nbBin; j++)
         out << m_occurrence[i].bin[j] << " ";
@@ -191,4 +202,4 @@ class SpecManagerCnf : public SpecManager {
     }
   }
 };
-}  // namespace d4
+} // namespace d4

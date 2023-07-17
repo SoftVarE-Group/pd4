@@ -1,3 +1,4 @@
+
 /*
  * d4
  * Copyright (C) 2020  Univ. Artois & CNRS
@@ -15,47 +16,29 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 
-#include "src/exceptions/NodeException.hpp"
-#include "src/problem/ProblemManager.hpp"
-
+#include "HyperGraph.hpp"
+#include "HyperGraphExtractor.hpp"
+#include "HyperGraphExtractorDual.hpp"
+#include "src/problem/ProblemTypes.hpp"
+#include "src/specs/cnf/SpecManagerCnf.hpp"
 namespace d4 {
+class HyperGraphExtractorDualProj : public HyperGraphExtractorDual {
+private:
+  int m_nProjCost;
 
-using NormMap = std::vector<Lit>;
-template <class T, typename U>
-class DecomposableAndNode;
-template <class T, typename U>
-class BinaryDeterministicOrNode;
-template <class T, typename U>
-class UnaryNode;
-template <class T>
-class TrueNode;
-template <class T>
-class FalseNode;
+public:
+  HyperGraphExtractorDualProj(unsigned nbVar, unsigned nbClause, int projCost);
 
-enum TypeNode {
-  TypeIteNode,
-  TypeUnaryNode,
-  TypeDecAndNode,
-  TypeTrueNode,
-  TypeFalseNode,
-  count
+  void constructHyperGraph(SpecManagerCnf &om, std::vector<Var> &component,
+                           std::vector<Var> &equivClass,
+                           std::vector<std::vector<Var>> &equivVar,
+                           bool reduceFormula, std::vector<Var> &considered,
+                           HyperGraph &hypergraph);
 };
-enum ValueVar { isTrue, isFalse, isNotAssigned };
-
-template <class T>
-class Node {
- public:
-  struct {
-    unsigned typeNode : 4;
-    unsigned stamp : 28;
-  } header;
-
-  Node() { header = {0, 0}; }
-};
-}  // namespace d4
+} // namespace d4

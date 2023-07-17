@@ -19,6 +19,7 @@
 
 #include <bitset>
 #include <vector>
+#include "Node.hpp"
 
 #include "../DataBranch.hpp"
 #include "BinaryDeterministicOrNode.hpp"
@@ -187,6 +188,23 @@ class NodeManagerTyped : public NodeManager<T> {
                                 m_globalStamp);
   }  // printNNF
 
+  virtual void printNNF(Node<T> *node, std::ostream &out,NormMap& norm){  
+
+        unsigned (*func[TypeNode::count])(Node<T> * node, unsigned (*t[])(),
+                                          std::ostream &, unsigned &, unsigned,NormMap&);
+        func[TypeNode::TypeDecAndNode] = DecomposableAndNode<T, U>::printNNFNorm;
+        func[TypeNode::TypeIteNode] = BinaryDeterministicOrNode<T, U>::printNNFNorm;
+        func[TypeNode::TypeUnaryNode] = UnaryNode<T, U>::printNNFNorm;
+        func[TypeNode::TypeFalseNode] = FalseNode<T>::printNNFNorm;
+        func[TypeNode::TypeTrueNode] = TrueNode<T>::printNNFNorm;
+
+        m_globalStamp++;
+        unsigned idx = 1;
+        func[node->header.typeNode](node, (unsigned (**)())func, out, idx,
+                                    m_globalStamp,norm);
+
+  }
+
   /**
      Deallocate the memory of the member variables of all the graph from a given
      node.
@@ -273,6 +291,8 @@ class NodeManager {
   virtual bool isSAT(Node<T> *node, std::vector<ValueVar> &fixedValue) = 0;
 
   virtual void printNNF(Node<T> *node, std::ostream &out) = 0;
+
+  virtual void printNNF(Node<T> *node, std::ostream &out,NormMap& normalized) = 0;
 
   virtual void deallocate(Node<T> *node) = 0;
 };

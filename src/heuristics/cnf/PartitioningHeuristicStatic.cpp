@@ -21,6 +21,7 @@
 #include "PartitioningHeuristicStaticNone.hpp"
 #include "PartitioningHeuristicStaticSingleDual.hpp"
 #include "PartitioningHeuristicStaticSinglePrimal.hpp"
+#include "PartitioningHeuristicStaticSingleProjDual.hpp"
 #include "src/exceptions/FactoryException.hpp"
 
 namespace d4 {
@@ -39,7 +40,7 @@ PartitioningHeuristicStatic::PartitioningHeuristicStatic(po::variables_map &vm,
           vm, s, om, dynamic_cast<SpecManagerCnf &>(om).getNbClause(),
           dynamic_cast<SpecManagerCnf &>(om).getNbVariable(),
           dynamic_cast<SpecManagerCnf &>(om).getSumSizeClauses(), out) {
-}  // constructor
+} // constructor
 
 /**
    Constructor.
@@ -68,14 +69,15 @@ PartitioningHeuristicStatic::PartitioningHeuristicStatic(
 
   m_isInitialized = false;
   m_pm = NULL;
-}  // constructor
+} // constructor
 
 /**
    Destructor.
 */
 PartitioningHeuristicStatic::~PartitioningHeuristicStatic() {
-  if (m_pm) delete m_pm;
-}  // destructor
+  if (m_pm)
+    delete m_pm;
+} // destructor
 
 /**
    Generate a static partitioner regarding the given option list.
@@ -98,6 +100,7 @@ PartitioningHeuristicStatic::makePartitioningHeuristicStatic(
       vm["partitioning-heuristic-bipartite-phase"].as<std::string>();
 
   PartitioningHeuristicStatic *ret = NULL;
+  std::cout << "p " << opt << " " << type << std::endl;
 
   if (opt == "none")
     ret = new PartitioningHeuristicStaticNone(vm, s, om, nbClause, nbVar,
@@ -108,6 +111,9 @@ PartitioningHeuristicStatic::makePartitioningHeuristicStatic(
   else if (opt == "dual" || (opt == "natural" && type == "dual"))
     ret = new PartitioningHeuristicStaticSingleDual(vm, s, om, nbClause, nbVar,
                                                     sumSize, out);
+  else if (opt == "proj" || type == "proj")
+    ret = new PartitioningHeuristicStaticSingleProjDual(vm, s, om, nbClause,
+                                                        nbVar, sumSize, out);
   else if (opt == "primal" || (opt == "natural" && type == "primal"))
     ret = new PartitioningHeuristicStaticSinglePrimal(vm, s, om, nbClause,
                                                       nbVar, sumSize, out);
@@ -116,6 +122,6 @@ PartitioningHeuristicStatic::makePartitioningHeuristicStatic(
                            __LINE__));
   ret->init(out);
   return ret;
-}  // makePartitioningHeuristicStatic
+} // makePartitioningHeuristicStatic
 
-}  // namespace d4
+} // namespace d4

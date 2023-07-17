@@ -10,6 +10,8 @@ scripts/minisat
 scripts/gmon.out
 .cache/
 .vscode/
+compile_commands.json
+*.dimacs
 CMakeFiles
 *.o
 *.o[dr]

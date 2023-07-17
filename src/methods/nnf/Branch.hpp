@@ -139,5 +139,19 @@ class Branch {
     }
     out << "0\n";
   }  // printNNF
+
+  void printNNFNorm(unsigned idxFather, U *data, unsigned (**func)(),
+                std::ostream &out, unsigned &idx, unsigned globalStamp,NormMap& norm) {
+    unsigned sidx = reinterpret_cast<unsigned (**)(
+        Node<T> *, unsigned (**func)(), std::ostream &, unsigned &, unsigned,NormMap&)>(
+        func)[d->header.typeNode](d, func, out, idx, globalStamp,norm);
+
+    out << idxFather << " " << sidx << " ";
+    for (unsigned i = 0; i < nbUnits; i++) {
+      U l = norm[data[i]].m_x;
+      out << ((l & 1) ? "-" : "") << (l >> 1) << " ";
+    }
+    out << "0\n";
+  }  // printNNF
 };
 }  // namespace d4

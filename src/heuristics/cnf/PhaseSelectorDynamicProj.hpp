@@ -16,46 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <ostream>
 
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-
-#include "src/exceptions/NodeException.hpp"
-#include "src/problem/ProblemManager.hpp"
+#include "PartitioningHeuristicStaticSingle.hpp"
+#include "PhaseSelectorManager.hpp"
 
 namespace d4 {
+class PhaseSelectorDynamicProj : public PhaseSelectorManager {
+private:
+  double m_limitRatio;
 
-using NormMap = std::vector<Lit>;
-template <class T, typename U>
-class DecomposableAndNode;
-template <class T, typename U>
-class BinaryDeterministicOrNode;
-template <class T, typename U>
-class UnaryNode;
-template <class T>
-class TrueNode;
-template <class T>
-class FalseNode;
+public:
+  PhaseSelectorDynamicProj(PartitioningHeuristicStaticSingle *staticPartitioner,
+                           double limitRatio, std::ostream &out);
 
-enum TypeNode {
-  TypeIteNode,
-  TypeUnaryNode,
-  TypeDecAndNode,
-  TypeTrueNode,
-  TypeFalseNode,
-  count
+  bool isStillOk(std::vector<Var> &component);
 };
-enum ValueVar { isTrue, isFalse, isNotAssigned };
-
-template <class T>
-class Node {
- public:
-  struct {
-    unsigned typeNode : 4;
-    unsigned stamp : 28;
-  } header;
-
-  Node() { header = {0, 0}; }
-};
-}  // namespace d4
+} // namespace d4

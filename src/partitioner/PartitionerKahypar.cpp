@@ -39,21 +39,22 @@ PartitionerKahypar::PartitionerKahypar(unsigned maxNodes, unsigned maxEdges,
   m_partition = std::vector<kahypar_partition_id_t>(maxNodes + 3);
 
   // set all weight to 1
-  for (unsigned i = 0; i < (maxNodes + 3); i++) m_cwghts[i] = 1;
+  for (unsigned i = 0; i < (maxNodes + 3); i++)
+    m_cwghts[i] = 1;
 
   m_mapNodes.resize(maxNodes + 3, false);
   m_markedNodes.resize(maxNodes + 3, false);
 
   context = kahypar_context_new();
   kahypar_configure_context_cut(context);
-}  // constructor
+} // constructor
 
 /**
    Destructor.
  */
 PartitionerKahypar::~PartitionerKahypar() {
   kahypar_context_free(context);
-}  // destructor
+} // destructor
 
 /**
    Get a partition from the hypergraph.
@@ -83,9 +84,11 @@ void PartitionerKahypar::computePartition(HyperGraph &hypergraph, Level level,
     }
   }
 
-  if (!elts.size()) return;
+  if (!elts.size())
+    return;
 
-  for (auto &x : elts) m_markedNodes[x] = false;
+  for (auto &x : elts)
+    m_markedNodes[x] = false;
   m_xpins[sizeXpins] = posPins;
 
   const kahypar_hypernode_id_t num_vertices = elts.size();
@@ -95,13 +98,14 @@ void PartitionerKahypar::computePartition(HyperGraph &hypergraph, Level level,
   const kahypar_partition_id_t k = 2;
 
   kahypar_hyperedge_weight_t objective = 0;
+  int *cost = hypergraph.getCost() ? hypergraph.getCost() : m_cwghts.get();
 
-  kahypar_partition(num_vertices, num_hyperedges, imbalance, k, nullptr,
-                    m_cwghts.get(), m_xpins.get(), m_pins.get(), &objective,
-                    context, m_partition.data());
+  kahypar_partition(num_vertices, num_hyperedges, imbalance, k, nullptr, cost,
+                    m_xpins.get(), m_pins.get(), &objective, context,
+                    m_partition.data());
 
   for (unsigned i = 0; i < elts.size(); i++)
     partition[elts[i]] = m_partition[i];
-}  // computePartition
+} // computePartition
 
-}  // namespace d4
+} // namespace d4

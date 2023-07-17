@@ -16,46 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <src/specs/cnf/SpecManagerCnf.hpp>
 
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-
-#include "src/exceptions/NodeException.hpp"
-#include "src/problem/ProblemManager.hpp"
+#include "../ScoringMethod.hpp"
 
 namespace d4 {
+class ScoringMethodFlowCut : public ScoringMethod {
+private:
+  SpecManagerCnf &om;
 
-using NormMap = std::vector<Lit>;
-template <class T, typename U>
-class DecomposableAndNode;
-template <class T, typename U>
-class BinaryDeterministicOrNode;
-template <class T, typename U>
-class UnaryNode;
-template <class T>
-class TrueNode;
-template <class T>
-class FalseNode;
+public:
+  ScoringMethodFlowCut(SpecManagerCnf &om);
+  inline double computeScore(Var v);
 
-enum TypeNode {
-  TypeIteNode,
-  TypeUnaryNode,
-  TypeDecAndNode,
-  TypeTrueNode,
-  TypeFalseNode,
-  count
+  virtual Var selectVariable(std::vector<Var> &vars, SpecManager &s,
+                             std::vector<bool> &isDecisionVariable);
 };
-enum ValueVar { isTrue, isFalse, isNotAssigned };
-
-template <class T>
-class Node {
- public:
-  struct {
-    unsigned typeNode : 4;
-    unsigned stamp : 28;
-  } header;
-
-  Node() { header = {0, 0}; }
-};
-}  // namespace d4
+} // namespace d4

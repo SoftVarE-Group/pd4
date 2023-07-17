@@ -21,10 +21,12 @@
 
 #include "PartitioningHeuristicNone.hpp"
 #include "cnf/PartitioningHeuristicBipartiteDual.hpp"
+#include "cnf/PartitioningHeuristicBipartiteDualProj.hpp"
 #include "cnf/PartitioningHeuristicBipartitePrimal.hpp"
 #include "cnf/PartitioningHeuristicStaticMulti.hpp"
 #include "cnf/PartitioningHeuristicStaticSingleDual.hpp"
 #include "cnf/PartitioningHeuristicStaticSinglePrimal.hpp"
+#include "cnf/PartitioningHeuristicStaticSingleProjDual.hpp"
 #include "src/exceptions/FactoryException.hpp"
 #include "src/utils/AtMost1Extractor.hpp"
 
@@ -35,11 +37,11 @@ namespace d4 {
 
    @param[in] out, the stream where is print out the log.
  */
-PartitioningHeuristic *PartitioningHeuristic::makePartitioningHeuristicNone(
-    std::ostream &out) {
+PartitioningHeuristic *
+PartitioningHeuristic::makePartitioningHeuristicNone(std::ostream &out) {
   out << "c [CONSTRUCTOR] Partitioner manager: none\n";
   return new PartitioningHeuristicNone();
-}  // makePartitioningHeuristicNone
+} // makePartitioningHeuristicNone
 
 /**
    Create a partitioner.
@@ -55,7 +57,8 @@ PartitioningHeuristic *PartitioningHeuristic::makePartitioningHeuristic(
   std::string meth = vm["partitioning-heuristic"].as<std::string>();
   std::string inType = vm["input-type"].as<std::string>();
 
-  if (meth == "none") return makePartitioningHeuristicNone(out);
+  if (meth == "none")
+    return makePartitioningHeuristicNone(out);
 
   bool reduceFormula =
       vm["partitioning-heuristic-simplification-hyperedge"].as<bool>();
@@ -80,6 +83,8 @@ PartitioningHeuristic *PartitioningHeuristic::makePartitioningHeuristic(
       return new PartitioningHeuristicBipartitePrimal(vm, ws, s, out);
     if (meth == "bipartition-dual")
       return new PartitioningHeuristicBipartiteDual(vm, ws, s, out);
+    if (meth == "bipartition-dual-proj")
+      return new PartitioningHeuristicBipartiteDualProj(vm, ws, s, out);
     if (meth == "decomposition-static-dual") {
       PartitioningHeuristicStaticSingleDual *ret =
           new PartitioningHeuristicStaticSingleDual(vm, ws, s, out);
@@ -98,11 +103,17 @@ PartitioningHeuristic *PartitioningHeuristic::makePartitioningHeuristic(
       ret->init(out);
       return ret;
     }
+    if (meth == "decomposition-static-proj-dual") {
+      PartitioningHeuristicStaticSingleProjDual *ret =
+          new PartitioningHeuristicStaticSingleProjDual(vm, ws, s, out);
+      ret->init(out);
+      return ret;
+    }
   }
 
   throw(FactoryException("Cannot create a PartitioningHeuristic", __FILE__,
                          __LINE__));
-}  // makePartitioningHeuristic
+} // makePartitioningHeuristic
 
 /**
    Associate for each variable in the component an equivalence class.
@@ -123,13 +134,14 @@ void PartitioningHeuristic::computeEquivClass(
     equivClass[v] = v;
   }
 
-  eqManager.searchEquiv(solver, component, equivVar);
+  eqManager.searchEquiv(solver, component, equivVar, nullptr);
   solver.whichAreUnits(component, unitEquiv);
 
   for (auto &c : equivVar) {
     Var vi = c.back();
-    for (auto &v : c) equivClass[v] = vi;
+    for (auto &v : c)
+      equivClass[v] = vi;
   }
-}  // computeEquivclass
+} // computeEquivclass
 
-}  // namespace d4
+} // namespace d4
