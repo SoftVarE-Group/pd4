@@ -16,45 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "EquivExtractor.hpp"
+#include "EquivExtractorProj.hpp"
+#include "UnionFind.hpp"
 #include "src/utils/UnionFind.hpp"
 
 namespace d4 {
+EquivExtractorProj::EquivExtractorProj(SpecManagerCnf *specs)
+    : EquivExtractor(specs->getNbClause()), m_specs(specs),
+      m_uf(specs->getNbVariable() + 1), m_bags(specs->getNbVariable() + 1) {}
 
-/**
-   Constructor.
-   Init the structure with the good number of variables.
-
-   @param[in] nbVar, the number of variables.
- */
-EquivExtractor::EquivExtractor(int nbVar) {
-  initEquivExtractor(nbVar + 1);
-} // constructor
-
-/**
-   Init the structure with the good number of variables.
-
-   @param[in] nbVar, the number of variables.
- */
-void EquivExtractor::initEquivExtractor(int nbVar) {
-  m_markedVar.resize(nbVar, false);
-  m_markedVarInter.resize(nbVar, false);
-  m_flagVar.resize(nbVar, false);
-} // initEquivExtractor
-
-/**
-   Compute the of variable that are "propagated" whatever the phase of the given
-   literal l.
-
-   @param[in] s, a wrapper to a solver.
-   @param[in] l, the literal we search for the "unit variables".
-   @param[out] listVarPU, the resulting variables.
-
-   \return false if assign l or ~l produces a conflict, true otherwise.
- */
-bool EquivExtractor::interCollectUnit(WrapperSolver &s, Var v,
-                                      std::vector<Var> &listVarPU,
-                                      std::vector<bool> &flagVar) {
+bool EquivExtractorProj::interCollectUnit(WrapperSolver &s, Var v,
+                                          std::vector<Var> &listVarPU,
+                                          std::vector<bool> &flagVar) {
   std::vector<Lit> listVarPosLit, listVarNegLit;
   if (!s.decideAndComputeUnit(Lit::makeLit(v, false), listVarPosLit))
     return false;
@@ -66,7 +39,7 @@ bool EquivExtractor::interCollectUnit(WrapperSolver &s, Var v,
     if (flagVar[l.var()])
       m_markedVarInter[l.var()] = true;
   for (auto &l : listVarNegLit)
-    if (m_markedVarInter[l.var()])
+    if (m_markedVarInter[l.var()] && m_specs->isSelected(v))
       listVarPU.push_back(l.var());
   for (auto &l : listVarPosLit)
     m_markedVarInter[l.var()] = false;
@@ -81,14 +54,47 @@ bool EquivExtractor::interCollectUnit(WrapperSolver &s, Var v,
    @param[in] v, the set of variables we search in.
    @param[out] equivVar, le resulting equivalences.
  */
-void EquivExtractor::searchEquiv(WrapperSolver &s, std::vector<Var> &vars,
-                                 std::vector<std::vector<Var>> &equivVar) {
+void EquivExtractorProj::searchEquiv(WrapperSolver &s, std::vector<Var> &vars,
+                                     std::vector<std::vector<Var>> &equivVar) {
   std::vector<Var> reinit;
+
   for (auto &v : vars)
     m_flagVar[v] = true;
+  {
+    m_specs->getCurrentClauses(m_idx_clauses, vars);
+    for (auto i : m_idx_clauses) {
+      Var root = var_Undef;
+      for (auto l : m_specs->getClause(i)) {
+        if (m_specs->isSelected(l.var()) || s.varIsAssigned(l.var()))
+          continue;
+        if (root != var_Undef) {
+          m_uf.union_sets(root, l.var());
+        }
+        root = l.var();
+      }
+    }
+    for (auto v : vars) {
+      if (m_specs->isSelected(v) || s.varIsAssigned(v))
+        continue;
+      reinit.push_back(v);
+      Var root = m_uf.find_set(v);
+      if (m_uf.size[root] > 1) {
+        m_bags[root].push_back(v);
+        if (!m_markedVar[root]) {
+          m_active_bags.push_back(root);
+          m_markedVar[root] = true;
+          reinit.push_back(root);
+        }
+      }
+    }
+    for (auto i : m_active_bags) {
+      equivVar.push_back(std::move(m_bags[i]));
+    }
+    m_uf.clear();
+  }
   for (auto &v : vars) {
     assert((unsigned)v < m_markedVar.size());
-    if (m_markedVar[v] || s.varIsAssigned(v))
+    if (m_markedVar[v] || s.varIsAssigned(v) || !m_specs->isSelected(v))
       continue;
 
     std::vector<Var> eqv;

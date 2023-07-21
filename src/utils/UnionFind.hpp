@@ -5,12 +5,8 @@
 struct UnionFind {
   std::vector<int> parent;
   std::vector<int> size;
-  UnionFind(int s) : parent(s), size(s) {
-    for (int &p : parent) {
-      parent[p] = p;
-      size[p] = 1;
-    }
-  }
+  UnionFind(int s) : parent(s), size(s) { clear(); }
+
   int find_set(int v) {
     if (v == parent[v])
       return v;
@@ -25,6 +21,12 @@ struct UnionFind {
         std::swap(a, b);
       parent[b] = a;
       size[a] += size[b];
+    }
+  }
+  void clear() {
+    for (int i = 0; i < parent.size(); i++) {
+      parent[i] = i;
+      size[i] = 1;
     }
   }
 };

@@ -1,6 +1,5 @@
 #include <cassert>
 #include <vector>
-
 struct IDIDFunc {
   std::vector<int> data;
   int max_val = 0, max_img = 0;

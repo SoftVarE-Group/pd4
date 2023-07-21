@@ -35,7 +35,7 @@ class PartitioningHeuristicStatic : public PartitioningHeuristic {
 protected:
   WrapperSolver &m_s;
   SpecManagerCnf &m_om;
-  EquivExtractor m_em;
+  EquivExtractor *m_em;
   PartitionerManager *m_pm;
 
   unsigned m_nbClause;

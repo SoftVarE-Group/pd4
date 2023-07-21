@@ -16,27 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <boost/program_options.hpp>
-#include <src/problem/ProblemTypes.hpp>
-#include <src/solvers/ActivityManager.hpp>
-#include <src/solvers/WrapperSolver.hpp>
-#include <src/specs/SpecManager.hpp>
-#include <vector>
+#include "EquivExtractor.hpp"
+#include "src/utils/UnionFind.hpp"
 
 namespace d4 {
-namespace po = boost::program_options;
-class ScoringMethod {
+class EquivExtractorProj : public EquivExtractor {
+private:
+  SpecManagerCnf *m_specs = 0;
+  UnionFind m_uf;
+  std::vector<unsigned int> m_idx_clauses;
+  std::vector<std::vector<Var>> m_bags;
+  std::vector<int> m_active_bags;
+
+  bool interCollectUnit(WrapperSolver &s, Var v, std::vector<Var> &listVarPU,
+                        std::vector<bool> &flagVar);
+
 public:
-  static ScoringMethod *makeScoringMethod(po::variables_map &vm, SpecManager &p,
-                                          ActivityManager &am,
-                                          std::ostream &out);
-  virtual ~ScoringMethod() { ; }
-  virtual double computeScore(Var v) = 0;
-  virtual void postProcess(Var v) {}
+  EquivExtractorProj() = default; // empty constructor
+  EquivExtractorProj(SpecManagerCnf *specs);
 
-  Var selectVariable(std::vector<Var> &vars, SpecManager &s,
-                     std::vector<bool> &isDecisionVariable);
-
-  Var selectVariable(std::vector<Var> &vars, SpecManager &s);
+  void searchEquiv(WrapperSolver &s, std::vector<Var> &v,
+                   std::vector<std::vector<Var>> &equivVar) final;
 };
 } // namespace d4

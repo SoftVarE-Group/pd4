@@ -21,6 +21,7 @@
 #include <ostream>
 
 #include "src/hyperGraph/HyperGraphExtractorDualProj.hpp"
+#include "src/utils/EquivExtractorProj.hpp"
 
 namespace d4 {
 
@@ -70,6 +71,7 @@ PartitioningHeuristicStaticSingleProjDual::
       vm["partitioning-heuristic-partitioner-np-cost"].as<int>());
   m_maxNbNodes = m_nbClause + 1;
   m_maxNbEdges = m_nbVar + 1;
+  m_em = new EquivExtractor(m_om.getNbVariable());
 } // constructor
 
 /**

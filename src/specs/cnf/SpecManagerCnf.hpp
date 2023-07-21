@@ -24,6 +24,7 @@
 #include "src/problem/ProblemManager.hpp"
 #include "src/problem/cnf/ProblemManagerCnf.hpp"
 #include "src/utils/Enum.hpp"
+#include "src/utils/Proj.hpp"
 
 namespace d4 {
 struct SpecClauseInfo {
@@ -44,7 +45,7 @@ class SpecManagerCnf : public SpecManager {
 protected:
   std::vector<std::vector<Lit>> m_clauses;
   std::vector<int> m_clausesNotBin;
-  unsigned m_nbVar, m_maxSizeClause;
+  unsigned m_maxSizeClause;
   std::vector<lbool> m_currentValue;
   std::vector<SpecClauseInfo> m_infoClauses;
 
@@ -59,8 +60,6 @@ protected:
   std::vector<Var> m_tmpVecVar;
   std::vector<int> m_idxComponent;
   std::vector<bool> m_markView;
-  std::vector<bool> m_selected;
-  bool m_isProj;
 
   inline void resetUnMark() {
     for (auto &idx : m_mustUnMark)
@@ -75,8 +74,10 @@ public:
   int computeConnectedComponent(std::vector<std::vector<Var>> &varConnected,
                                 std::vector<Var> &setOfVar,
                                 std::vector<Var> &freeVar) override;
-  bool isSelected(Var v);
-  bool isProj();
+
+  int computeConnectedComponent(std::vector<ProjVars> &varConnected,
+                                std::vector<Var> &setOfVar,
+                                std::vector<Var> &freeVar) override;
 
   void showFormula(std::ostream &out) override;
   void showCurrentFormula(std::ostream &out) override;

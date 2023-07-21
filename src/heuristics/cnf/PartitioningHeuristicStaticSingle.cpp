@@ -59,6 +59,7 @@ PartitioningHeuristicStaticSingle::PartitioningHeuristicStaticSingle(
   m_equivClass.resize(m_nbVar + 1, 0);
   m_levelDistribution.resize(m_nbVar + 1, 0);
   m_markedVar.resize(m_nbVar + 1, 0);
+  m_em = nullptr;
 } // constructor
 
 /**
@@ -85,9 +86,12 @@ void PartitioningHeuristicStaticSingle::init(std::ostream &out) {
   // search for equiv class if requiered.
   std::vector<Lit> unitEquiv;
   std::vector<std::vector<Var>> equivVar;
+  if (!m_em) {
+    m_em = new EquivExtractor(m_om.getNbVariable());
+  }
 
   if (m_equivSimp)
-    PartitioningHeuristic::computeEquivClass(m_em, m_s, component, unitEquiv,
+    PartitioningHeuristic::computeEquivClass(*m_em, m_s, component, unitEquiv,
                                              m_equivClass, equivVar);
   else
     for (auto &v : component)

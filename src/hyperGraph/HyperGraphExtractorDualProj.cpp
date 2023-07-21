@@ -15,6 +15,7 @@ void HyperGraphExtractorDualProj::constructHyperGraph(
   // std::cout << "Cost " << m_nProjCost << std::endl;
 
   // first considere the equivalence.
+
   for (auto &vec : equivVar) {
     unsigned &size = hypergraph[pos++];
     size = 0;

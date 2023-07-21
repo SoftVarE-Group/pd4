@@ -94,13 +94,12 @@ Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s,
   return ret;
 } // selectVariable
   //
-Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s,
-                                  ProjInfo &info) {
+Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s) {
   Var ret = var_Undef;
   double bestScore = -1;
 
   for (auto &v : vars) {
-    if (s.varIsAssigned(v) || !info.isProj(v))
+    if (s.varIsAssigned(v) || !s.isSelected(v))
       continue;
 
     double current = computeScore(v);

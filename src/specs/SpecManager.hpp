@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "src/utils/Proj.hpp"
 #include <boost/program_options.hpp>
 #include <ranges>
 #include <src/problem/ProblemManager.hpp>
@@ -23,22 +24,19 @@
 #include <vector>
 
 namespace d4 {
-struct ProjInfo {
-  int nbProjVars;
-  int nbVars;
-  auto projVars() { return std::views::iota(int(1), int(nbProjVars + 1)); }
-  auto nProjVars() {
-    return std::views::iota(int(nbProjVars + 1), int(nbVars + 1));
-  }
-  bool isProj(Var v) { return v <= nbProjVars; }
-  bool isNProj(Var v) { return !isProj(v); }
-  bool hasProj() { return nbVars != nbProjVars; }
-};
 namespace po = boost::program_options;
 class SpecManager {
+protected:
+  unsigned m_nbVar;
+  unsigned m_nbProj;
+
 public:
   static SpecManager *makeSpecManager(po::variables_map &vm, ProblemManager &p,
                                       std::ostream &out);
+
+  inline bool isSelected(Var v) { return v <= m_nbProj; }
+  inline bool isProj() { return m_nbProj != m_nbVar; }
+  inline int nbSelected() { return m_nbProj; }
 
   virtual ~SpecManager() {}
   virtual bool litIsAssigned(Lit l) = 0;
@@ -48,6 +46,9 @@ public:
   computeConnectedComponent(std::vector<std::vector<Var>> &varConnected,
                             std::vector<Var> &setOfVar,
                             std::vector<Var> &freeVar) = 0;
+  virtual int computeConnectedComponent(std::vector<ProjVars> &varConnected,
+                                        std::vector<Var> &setOfVar,
+                                        std::vector<Var> &freeVar) = 0;
   virtual void preUpdate(std::vector<Lit> &lits) = 0;
   virtual void postUpdate(std::vector<Lit> &lits) = 0;
   virtual void initialize(std::vector<Var> &setOfVar,

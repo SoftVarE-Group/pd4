@@ -39,11 +39,12 @@ SpecManager *SpecManager::makeSpecManager(po::variables_map &vm,
   out << "c [CONSTRUCTOR SPEC] Spec manager: " << meth << " " << inType << "\n";
 
   if (inType == "cnf" || inType == "dimacs") {
-    if (meth == "dynamic") return new SpecManagerCnfDyn(p);
+    if (meth == "dynamic")
+      return new SpecManagerCnfDyn(p);
     return NULL;
   }
 
   throw(FactoryException("Cannot create a SpecManager", __FILE__, __LINE__));
-}  // makeSpecManager
+} // makeSpecManager
 
-}  // namespace d4
+} // namespace d4

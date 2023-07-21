@@ -59,8 +59,6 @@ PartitioningHeuristicStatic::PartitioningHeuristicStatic(
   m_nbVar = nbVar;
   m_nbClause = nbClause;
 
-  m_em.initEquivExtractor(m_nbVar + 1);
-
   // get the options.
   m_reduceFormula =
       vm["partitioning-heuristic-simplification-hyperedge"].as<bool>();
@@ -77,6 +75,8 @@ PartitioningHeuristicStatic::PartitioningHeuristicStatic(
 PartitioningHeuristicStatic::~PartitioningHeuristicStatic() {
   if (m_pm)
     delete m_pm;
+  if (m_em)
+    delete m_em;
 } // destructor
 
 /**

@@ -34,7 +34,7 @@ public:
                     std::vector<double> &weightVar, std::vector<Var> &selected);
   ProblemManagerCnf(ProblemManager *problem);
 
-  ProblemManagerCnf(std::string &nameFile);
+  ProblemManagerCnf(std::string &nameFile, std::string &proj_vars);
   ~ProblemManagerCnf();
   void display(std::ostream &out) override;
   std::vector<std::vector<Lit>> &getClauses() { return m_clauses; }

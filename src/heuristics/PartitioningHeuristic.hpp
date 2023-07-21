@@ -30,24 +30,23 @@
 namespace d4 {
 namespace po = boost::program_options;
 class PartitioningHeuristic {
- protected:
+protected:
   unsigned m_nbVar;
 
+public:
   void computeEquivClass(EquivExtractor &eqManager, WrapperSolver &solver,
                          std::vector<Var> &component,
                          std::vector<Lit> &unitEquiv,
                          std::vector<Var> &equivClass,
                          std::vector<std::vector<Var>> &equivVar);
-
- public:
   virtual ~PartitioningHeuristic() {}
   static PartitioningHeuristic *makePartitioningHeuristic(po::variables_map &vm,
                                                           SpecManager &sm,
                                                           WrapperSolver &ws,
                                                           std::ostream &out);
 
-  static PartitioningHeuristic *makePartitioningHeuristicNone(
-      std::ostream &out);
+  static PartitioningHeuristic *
+  makePartitioningHeuristicNone(std::ostream &out);
 
   /**
      Compute a cutset regarding the subformula built on the set of given
@@ -72,4 +71,4 @@ class PartitioningHeuristic {
    */
   virtual void displayStat(std::ostream &out) {}
 };
-}  // namespace d4
+} // namespace d4

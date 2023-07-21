@@ -36,12 +36,14 @@
 #include "src/heuristics/PartitioningHeuristic.hpp"
 #include "src/heuristics/PhaseHeuristic.hpp"
 #include "src/heuristics/ScoringMethod.hpp"
+#include "src/heuristics/cnf/ProjBackupHeuristic.hpp"
 #include "src/preprocs/PreprocManager.hpp"
 #include "src/problem/ProblemManager.hpp"
 #include "src/problem/ProblemTypes.hpp"
 #include "src/solvers/WrapperSolver.hpp"
 #include "src/specs/SpecManager.hpp"
 #include "src/utils/MemoryStat.hpp"
+#include "src/utils/Proj.hpp"
 
 #define NB_SEP_MC 104
 #define MASK_SHOWRUN_MC ((2 << 13) - 1)
@@ -83,7 +85,7 @@ private:
   std::vector<unsigned long> nbTestCacheVarSize;
   std::vector<unsigned long> nbPosHitCacheVarSize;
 
-  std::vector<bool> m_currentPrioritySet, m_isDecisionVariable;
+  std::vector<bool> m_currentPrioritySet;
 
   ProblemManager *m_problem;
   WrapperSolver *m_solver;
@@ -91,6 +93,8 @@ private:
   ScoringMethod *m_hVar;
   PhaseHeuristic *m_hPhase;
   PartitioningHeuristic *m_hCutSet;
+  ProjBackupHeuristic *m_hBackUp;
+
   TmpEntry<U> NULL_CACHE_ENTRY;
   CacheManager<U> *m_cache;
   std::ostream m_out;
@@ -134,12 +138,6 @@ public:
     m_hPhase =
         PhaseHeuristic::makePhaseHeuristic(vm, *m_specs, *m_solver, m_out);
 
-    m_isDecisionVariable.clear();
-    m_isDecisionVariable.resize(m_problem->getNbVar() + 1,
-                                !m_problem->getNbSelectedVar());
-    for (auto v : m_problem->getSelectedVar())
-      m_isDecisionVariable[v] = true;
-    m_currentPrioritySet.resize(m_problem->getNbVar() + 1, false);
     m_isProjectedMode = true;
 
     // select the partitioner regarding if it projected model counting or not.
@@ -154,6 +152,7 @@ public:
     }
     */
 
+    m_currentPrioritySet.resize(m_problem->getNbVar() + 1, false);
     m_hCutSet = PartitioningHeuristic::makePartitioningHeuristic(
         vm, *m_specs, *m_solver, m_out);
     // m_hCutSet = PartitioningHeuristic::makePartitioningHeuristicNone(m_out);
@@ -178,7 +177,7 @@ public:
     m_operation = static_cast<Operation<T, U> *>(op);
     m_out << "c\n";
     m_var_sign.resize(m_specs->getNbVariable() + 1, 0);
-    m_hSign = ProjSignHeuristic((SpecManagerCnf *)m_specs);
+    m_hBackUp = new ProjBackupHeuristic(vm, *m_specs, *m_solver, m_out);
 
   } // constructor
 
@@ -199,15 +198,15 @@ public:
   std::vector<unsigned int> m_clauses_idx;
 
 private:
-  void reduceNProjVars(std::vector<Var> &vars) {
-    if (vars.size() < 10 || m_frequency % 100 != 0)
+  void reduceNProjVars(ProjVars &vars) {
+    if (vars.vars.size() < 10 || m_frequency % 100 != 0)
       return;
     m_frequency++;
     SpecManagerCnf *specs = ((SpecManagerCnf *)m_specs);
-    specs->getCurrentClauses(m_clauses_idx, vars);
+    specs->getCurrentClauses(m_clauses_idx, vars.vars);
     for (auto c_idx : m_clauses_idx) {
       for (Lit l : specs->getClause(c_idx)) {
-        if (m_isDecisionVariable[l.var()])
+        if (m_specs->isSelected(l.var()))
           continue;
         if (m_var_sign[l.var()] == 0) {
           m_var_sign[l.var()] = l.sign() + 1;
@@ -216,9 +215,7 @@ private:
         }
       }
     }
-    for (Var v : vars) {
-      if (m_isDecisionVariable[v])
-        continue;
+    for (Var v : vars.iter_nproj()) {
       if (m_var_sign[v] == 1) {
         m_solver->pushAssumption(Lit::makeLit(v, 0));
       } else if (m_var_sign[v] == 2) {
@@ -226,11 +223,9 @@ private:
       }
     }
   }
-  void reduceNProjVarsPost(std::vector<Var> &vars) {
+  void reduceNProjVarsPost(ProjVars &vars) {
     int cnt = 0;
-    for (Var v : vars) {
-      if (m_isDecisionVariable[v])
-        continue;
+    for (Var v : vars.iter_nproj()) {
       if (m_var_sign[v] == 1 || m_var_sign[v] == 2) {
         cnt++;
       }
@@ -251,14 +246,11 @@ private:
      @param[in] isDecisionvariable, a boolean vector that marks as true decision
      variables.
    */
-  void expelNoDecisionVar(std::vector<Var> &vars,
-                          std::vector<bool> &isDecisionVariable) {
-    if (!m_isProjectedMode)
-      return;
+  void expelNoDecisionVar(std::vector<Var> &vars) {
 
     unsigned j = 0;
     for (unsigned i = 0; i < vars.size(); i++)
-      if (isDecisionVariable[vars[i]])
+      if (m_specs->isSelected(vars[i]))
         vars[j++] = vars[i];
     vars.resize(j);
   } // expelNoDecisionVar
@@ -271,14 +263,13 @@ private:
      @param[in] isDecisionvariable, a boolean vector that marks as true decision
      variables.
    */
-  void expelNoDecisionLit(std::vector<Lit> &lits,
-                          std::vector<bool> &isDecisionVariable) {
+  void expelNoDecisionLit(std::vector<Lit> &lits) {
     if (!m_isProjectedMode)
       return;
 
     unsigned j = 0;
     for (unsigned i = 0; i < lits.size(); i++)
-      if (isDecisionVariable[lits[i].var()])
+      if (m_specs->isSelected(lits[i].var()))
         lits[j++] = lits[i];
     lits.resize(j);
   } // expelNoDecisionLit
@@ -433,31 +424,29 @@ private:
 
     return ok;
   }
-  U compute_(std::vector<Var> &setOfVar, std::vector<Lit> &unitsLit,
+  U compute_(ProjVars &setOfVar, bool emergencyMode, std::vector<Lit> &unitsLit,
              std::vector<Var> &freeVariable, std::ostream &out) {
     showRun(out);
     m_nbCallCall++;
     reduceNProjVars(setOfVar);
 
-    if (!m_solver->solve(setOfVar)) {
+    if (!m_solver->solve(setOfVar.vars)) {
       reduceNProjVarsPost(setOfVar);
       return m_operation->manageBottom();
     }
 
-    m_solver->whichAreUnits(setOfVar, unitsLit); // collect unit literals
+    m_solver->whichAreUnits(setOfVar.vars, unitsLit); // collect unit literals
     m_specs->preUpdate(unitsLit);
 
     // compute the connected composant
-    std::vector<std::vector<Var>> varConnected;
-    int nbComponent = m_specs->computeConnectedComponent(varConnected, setOfVar,
-                                                         freeVariable);
-    expelNoDecisionVar(freeVariable, m_isDecisionVariable);
-    varConnected.erase(std::partition(varConnected.begin(), varConnected.end(),
-                                      [&](const std::vector<Var> &comp) {
-                                        return !onlyExtra(comp,
-                                                          m_isDecisionVariable);
-                                      }),
-                       varConnected.end());
+    std::vector<ProjVars> varConnected;
+    int nbComponent = m_specs->computeConnectedComponent(
+        varConnected, setOfVar.vars, freeVariable);
+    expelNoDecisionVar(freeVariable);
+    varConnected.erase(
+        std::partition(varConnected.begin(), varConnected.end(),
+                       [&](const ProjVars &comp) { return comp.nbProj > 0; }),
+        varConnected.end());
     nbComponent = varConnected.size();
 
     // consider each connected component.
@@ -465,20 +454,20 @@ private:
       U tab[nbComponent];
       m_nbSplit += (nbComponent > 1) ? nbComponent : 0;
       for (int cp = 0; cp < nbComponent; cp++) {
-        std::vector<Var> &connected = varConnected[cp];
-        bool cacheActivated = cacheIsActivated(connected);
+        ProjVars &connected = varConnected[cp];
+        bool cacheActivated = cacheIsActivated(connected.vars);
 
-        TmpEntry<U> cb = cacheActivated ? m_cache->searchInCache(connected)
+        TmpEntry<U> cb = cacheActivated ? m_cache->searchInCache(connected.vars)
                                         : NULL_CACHE_ENTRY;
 
         if (cacheActivated)
-          nbTestCacheVarSize[connected.size()]++;
+          nbTestCacheVarSize[connected.vars.size()]++;
         if (cacheActivated && cb.defined) {
-          nbPosHitCacheVarSize[connected.size()]++;
+          nbPosHitCacheVarSize[connected.vars.size()]++;
           tab[cp] = cb.getValue();
         } else {
           // recursive call
-          tab[cp] = computeDecisionNode(connected, out);
+          tab[cp] = computeDecisionNode(connected, emergencyMode, out);
 
           if (cacheActivated)
             m_cache->addInCache(cb, tab[cp]);
@@ -486,14 +475,14 @@ private:
       }
 
       m_specs->postUpdate(unitsLit);
-      expelNoDecisionLit(unitsLit, m_isDecisionVariable);
+      expelNoDecisionLit(unitsLit);
       reduceNProjVarsPost(setOfVar);
 
       return m_operation->manageDecomposableAnd(tab, nbComponent);
     } // else we have a tautology
 
     m_specs->postUpdate(unitsLit);
-    expelNoDecisionLit(unitsLit, m_isDecisionVariable);
+    expelNoDecisionLit(unitsLit);
     reduceNProjVarsPost(setOfVar);
 
     return m_operation->createTop();
@@ -506,7 +495,7 @@ private:
    */
   inline void setCurrentPriority(std::vector<Var> &cutSet) {
     for (auto &v : cutSet)
-      if (m_isDecisionVariable[v])
+      if (m_specs->isSelected(v))
         m_currentPrioritySet[v] = true;
   } // setCurrentPriority
 
@@ -517,7 +506,7 @@ private:
    */
   inline void unsetCurrentPriority(std::vector<Var> &cutSet) {
     for (auto &v : cutSet)
-      if (m_isDecisionVariable[v])
+      if (m_specs->isSelected(v))
         m_currentPrioritySet[v] = false;
   } // setCurrentPriority
 
@@ -529,11 +518,12 @@ private:
 
      \return the compiled formula.
   */
-  U computeDecisionNode(std::vector<Var> &connected, std::ostream &out) {
+  U computeDecisionNode(ProjVars &connected, bool emergencyMode,
+                        std::ostream &out) {
     std::vector<Var> cutSet;
     bool hasPriority = false, hasVariable = false;
-    for (auto v : connected) {
-      if (m_specs->varIsAssigned(v) || !m_isDecisionVariable[v])
+    for (auto v : connected.vars) {
+      if (m_specs->varIsAssigned(v) || !m_specs->isSelected(v))
         continue;
       hasVariable = true;
       if ((hasPriority = m_currentPrioritySet[v]))
@@ -541,16 +531,29 @@ private:
     }
     bool cut_valid = false;
 
-    if (hasVariable && !hasPriority && m_hCutSet->isReady(connected)) {
-      m_hCutSet->computeCutSet(connected, cutSet);
+    if (hasVariable && !hasPriority && m_hCutSet->isReady(connected.vars)) {
+      m_hCutSet->computeCutSet(connected.vars, cutSet);
       for (int i = 0; i < cutSet.size(); i++) {
-        cut_valid |= m_isDecisionVariable[cutSet[i]] &&
+        cut_valid |= m_specs->isSelected(cutSet[i]) &&
                      !m_specs->varIsAssigned(cutSet[i]);
       }
       if (cut_valid) {
         setCurrentPriority(cutSet);
-      } else {
-        m_failed_cuts += 1;
+
+      } else if (!emergencyMode) {
+        cutSet.clear();
+        if (m_hBackUp->computeCutSetDyn(connected, cutSet)) {
+          std::cout << "Attampted to save" << std::endl;
+          for (int i = 0; i < cutSet.size(); i++) {
+            cut_valid |= m_specs->isSelected(cutSet[i]) &&
+                         !m_specs->varIsAssigned(cutSet[i]);
+          }
+
+          if (cut_valid) {
+            std::cout << "Saved cut" << std::endl;
+            setCurrentPriority(cutSet);
+          }
+        }
       }
       m_callPartitioner++;
     }
@@ -558,18 +561,21 @@ private:
     // search the next variable to branch on
     Var v;
     if (cut_valid || hasPriority) {
-      v = m_hVar->selectVariable(connected, *m_specs, m_currentPrioritySet);
+      v = m_hVar->selectVariable(connected.vars, *m_specs,
+                                 m_currentPrioritySet);
+      emergencyMode = false;
     } else {
       m_failed_cuts += 1;
-      v = m_hVar->selectVariable(connected, *m_specs, m_isDecisionVariable);
+      emergencyMode = true;
+      v = m_hVar->selectVariable(connected.vars, *m_specs);
     }
 
     if (v == var_Undef) {
       unsetCurrentPriority(cutSet);
-      return m_operation->manageTop(connected);
+      return m_operation->manageTop(connected.vars);
     }
 
-    assert(m_isDecisionVariable[v]);
+    assert(m_specs->isSelected(v));
 
     Lit l = Lit::makeLit(v, m_hPhase->selectPhase(v));
     m_nbDecisionNode++;
@@ -579,16 +585,19 @@ private:
 
     assert(!m_solver->isInAssumption(l.var()));
     m_solver->pushAssumption(l);
-    b[0].d = compute_(connected, b[0].unitLits, b[0].freeVars, out);
+    b[0].d =
+        compute_(connected, emergencyMode, b[0].unitLits, b[0].freeVars, out);
     m_solver->popAssumption();
 
     if (m_solver->isInAssumption(l))
       b[1].d = m_operation->manageBottom();
     else if (m_solver->isInAssumption(~l))
-      b[1].d = compute_(connected, b[1].unitLits, b[1].freeVars, out);
+      b[1].d =
+          compute_(connected, emergencyMode, b[1].unitLits, b[1].freeVars, out);
     else {
       m_solver->pushAssumption(~l);
-      b[1].d = compute_(connected, b[1].unitLits, b[1].freeVars, out);
+      b[1].d =
+          compute_(connected, emergencyMode, b[1].unitLits, b[1].freeVars, out);
       m_solver->popAssumption();
     }
 
@@ -607,15 +616,15 @@ private:
      \return an element of type U that sums up the given CNF formula using a
      DPLL style algorithm with an operation manager.
   */
-  U compute(std::vector<Var> &setOfVar, std::ostream &out,
-            bool warmStart = true) {
-    if (m_problem->isUnsat() || (warmStart && !m_panicMode &&
-                                 !m_solver->warmStart(29, 11, setOfVar, m_out)))
+  U compute(ProjVars &setOfVar, std::ostream &out, bool warmStart = true) {
+    if (m_problem->isUnsat() ||
+        (warmStart && !m_panicMode &&
+         !m_solver->warmStart(29, 11, setOfVar.vars, m_out)))
       return m_operation->manageBottom();
 
     DataBranch<U> b;
     auto start = std::chrono::steady_clock::now();
-    b.d = compute_(setOfVar, b.unitLits, b.freeVars, out);
+    b.d = compute_(setOfVar, false, b.unitLits, b.freeVars, out);
     std::cout << "Elapsed(ms)=" << since(start).count() << std::endl;
     return m_operation->manageBranch(b);
   } // compute
@@ -647,7 +656,9 @@ public:
         shadowUnits.push_back(l);
 
     m_specs->preUpdate(shadowUnits);
-    U result = compute(setOfVar, out, false);
+
+    ProjVars setOfVar_{setOfVar, m_specs->nbSelected()};
+    U result = compute(setOfVar_, out, false);
     m_specs->postUpdate(shadowUnits);
 
     return m_operation->count(result);
@@ -659,9 +670,10 @@ public:
      @param[in] vm, the set of options.
    */
   void run(po::variables_map &vm) {
-    std::vector<Var> setOfVar;
+    ProjVars setOfVar;
+    setOfVar.nbProj = m_specs->nbSelected();
     for (int i = 1; i <= m_specs->getNbVariable(); i++)
-      setOfVar.push_back(i);
+      setOfVar.vars.push_back(i);
 
     U result = compute(setOfVar, m_out);
     printFinalStats(m_out);

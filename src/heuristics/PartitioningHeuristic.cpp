@@ -134,7 +134,7 @@ void PartitioningHeuristic::computeEquivClass(
     equivClass[v] = v;
   }
 
-  eqManager.searchEquiv(solver, component, equivVar, nullptr);
+  eqManager.searchEquiv(solver, component, equivVar);
   solver.whichAreUnits(component, unitEquiv);
 
   for (auto &c : equivVar) {

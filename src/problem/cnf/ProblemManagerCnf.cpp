@@ -20,6 +20,7 @@
 
 #include "ParserDimacs.hpp"
 #include "src/problem/ProblemManager.hpp"
+#include <charconv>
 
 namespace d4 {
 /**
@@ -27,11 +28,48 @@ namespace d4 {
 
    @param[in] nameFile, parse the instance from a file
  */
-ProblemManagerCnf::ProblemManagerCnf(std::string &nameFile) {
+ProblemManagerCnf::ProblemManagerCnf(std::string &nameFile,
+                                     std::string &proj_vars) {
   ParserDimacs parser;
   m_nbVar = parser.parse_DIMACS(nameFile, this);
-
-  if (m_selected.size() != m_nbVar && false) {
+  if (proj_vars != "") {
+    std::ifstream f(proj_vars);
+    std::string buf((std::istreambuf_iterator<char>(f)),
+                    std::istreambuf_iterator<char>());
+    m_selected.clear();
+    size_t offset = 0;
+    auto skip_ws = [&]() {
+      while (offset < buf.size()) {
+        if (std::isalnum(buf[offset])) {
+          return true;
+        }
+        offset++;
+      }
+      return false;
+    };
+    auto read_word = [&]() {
+      while (offset < buf.size()) {
+        if (!std::isalnum(buf[offset])) {
+          break;
+        }
+        offset++;
+      }
+    };
+    while (offset < buf.size()) {
+      if (!skip_ws()) {
+        break;
+      }
+      size_t begin = offset;
+      read_word();
+      size_t end = offset;
+      int result;
+      auto [ptr, ec] =
+          std::from_chars(buf.data() + begin, buf.data() + end, result);
+      assert(ec == std::errc());
+      m_selected.push_back(result);
+    }
+  }
+  if (m_selected.size() != m_nbVar) {
     m_projMap = IDIDFunc(m_nbVar + 1, m_nbVar + 1);
     Var i = 1;
     std::vector<bool> marked(m_nbVar);
