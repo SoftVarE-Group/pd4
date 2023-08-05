@@ -67,6 +67,52 @@ void WrapperGlucose::initSolver(ProblemManager &p) {
   m_isInAssumption.resize(p.getNbVar() + 1, 0);
 }  // initSolver
 
+void WrapperGlucose::addClause(std::vector<Lit>& cl,bool learnt){
+    using namespace Glucose;
+    std::vector<Glucose::Lit> ps(cl.size());
+    for(int i = 0;i<cl.size();i++){
+        ps[i] = Glucose::mkLit(cl[i].var(),cl[i].sign());
+    }
+	CRef cr = s.ca.alloc(ps, learnt);
+	if(!learnt)
+		s.clauses.push(cr);
+	else
+		s.learnts.push(cr);
+	s.attachClause(cr);
+}
+void WrapperGlucose::initSolver(ProblemManager &p,std::vector<std::vector<Lit>>& learnt) {
+  try {
+    ProblemManagerCnf &pcnf = dynamic_cast<ProblemManagerCnf &>(p);
+
+    // force glucose to be in incremental mode in order to restart just after
+    // the assumptions.
+    // s.setIncrementalMode();
+
+    // say to the solver we have pcnf.getNbVar() variables.
+    while ((unsigned)s.nVars() <= pcnf.getNbVar()) s.newVar();
+    m_model.resize(pcnf.getNbVar() + 1, l_Undef);
+
+    // load the clauses
+    std::vector<std::vector<Lit>> &clauses = pcnf.getClauses();
+    for (auto &cl : clauses) {
+      Glucose::vec<Glucose::Lit> lits;
+      for (auto &l : cl) lits.push(Glucose::mkLit(l.var(), l.sign()));
+      s.addClause(lits);
+    }
+    for(auto cl:learnt){
+        addClause(cl,true);
+    }
+  } catch (std::bad_cast &bc) {
+    std::cerr << "bad_cast caught: " << bc.what() << '\n';
+    std::cerr << "A CNF formula was expeted\n";
+  }
+
+  m_activeModel = false;
+  m_needModel = false;
+  setNeedModel(m_needModel);
+  m_isInAssumption.resize(p.getNbVar() + 1, 0);
+}  // initSolver
+
 /**
    Call the SAT solver and return its result.
 
@@ -372,5 +418,29 @@ void WrapperGlucose::popAssumption(unsigned count) {
 }  // popAssumption
 
 inline unsigned WrapperGlucose::getNbConflict() { return s.conflicts; }
+
+void WrapperGlucose::exportLearnt(std::vector<std::vector<Lit>>& ilearnts){
+	ilearnts.clear();
+    using  namespace Glucose;
+
+	if(s.learnts.size() == 0) return;
+
+	if (s.learnts.size() >= s.clauses.size())
+		s.reduceDB();
+
+	for(int i=0; i<s.learnts.size(); i++){
+		Glucose::Clause& c = s.ca[s.learnts[i]];
+		ilearnts.push_back({});
+		for(int j=0; j<c.size(); j++) {
+			if(s.value(c[j]) == Glucose::l_True) {
+				ilearnts.pop_back();
+				break;
+			} else if(s.value(c[j]) == Glucose::l_Undef) {
+				ilearnts.back().push_back(Lit::makeLit( var(c[j]),sign( c[j])));
+			}
+		}
+	}
+}
+
 
 }  // namespace d4

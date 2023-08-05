@@ -55,7 +55,7 @@ PartitioningHeuristicStatic::PartitioningHeuristicStatic(po::variables_map &vm,
 PartitioningHeuristicStatic::PartitioningHeuristicStatic(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, int nbClause,
     int nbVar, int sumSize, std::ostream &out)
-    : m_s(s), m_om(dynamic_cast<SpecManagerCnf &>(om)) {
+    : m_s(s), m_om(dynamic_cast<SpecManagerCnf &>(om)),m_em(nullptr) {
   m_nbVar = nbVar;
   m_nbClause = nbClause;
 

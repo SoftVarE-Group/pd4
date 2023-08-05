@@ -26,6 +26,7 @@ namespace d4 {
 namespace po = boost::program_options;
 struct LastBreathPreproc {
   std::vector<double> countConflict;
+  std::vector<std::vector<Lit>> learnt;
   bool panic;
 
   inline void fitSizeCountConflict(unsigned size) {

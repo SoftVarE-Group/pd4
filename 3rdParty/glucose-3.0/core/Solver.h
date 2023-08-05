@@ -578,6 +578,7 @@ inline void Solver::claBumpActivity(Clause &c) {
       ca[learnts[i]].activity() *= 1e-20;
     cla_inc *= 1e-20;
   }
+
 }
 
 inline void Solver::checkGarbage(void) { return checkGarbage(garbage_frac); }

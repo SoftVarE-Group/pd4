@@ -32,12 +32,14 @@ class WrapperGlucose : public WrapperSolver {
   std::vector<lbool> m_model;
   bool m_activeModel;
   bool m_needModel;
+  void addClause(std::vector<Lit>& clause,bool learnt);
 
  protected:
   using WrapperSolver::m_isInAssumption;
 
  public:
   void initSolver(ProblemManager &p) override;
+  void initSolver(ProblemManager &p,std::vector<std::vector<Lit>>& learnt) override;
   bool solve(std::vector<Var> &setOfVar) override;
   bool solve() override;
   void uncheckedEnqueue(Lit l) override;
@@ -58,6 +60,7 @@ class WrapperGlucose : public WrapperSolver {
   lbool getModelVar(Var v) override;
   void getUnits(std::vector<Lit> &units) override;
   bool propagateAssumption() override;
+  void exportLearnt(std::vector<std::vector<Lit>>& clause) final;
 
   double getActivity(Var v) override;
   double getCountConflict(Var v) override;

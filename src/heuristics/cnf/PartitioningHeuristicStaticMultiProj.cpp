@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "PartitioningHeuristicStaticMulti.hpp"
+#include "PartitioningHeuristicStaticMultiProj.hpp"
 
 #include <ostream>
 
@@ -27,9 +27,9 @@ namespace d4 {
    @param[in] s, a wrapper on a solver.
    @param[in] om, a structure manager.
 */
-PartitioningHeuristicStaticMulti::PartitioningHeuristicStaticMulti(
+PartitioningHeuristicStaticMultiProj::PartitioningHeuristicStaticMultiProj(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, std::ostream &out)
-    : PartitioningHeuristicStaticMulti(
+    : PartitioningHeuristicStaticMultiProj(
           vm, s, om, dynamic_cast<SpecManagerCnf &>(om).getNbClause(),
           dynamic_cast<SpecManagerCnf &>(om).getNbVariable(),
           dynamic_cast<SpecManagerCnf &>(om).getSumSizeClauses(), out) {
@@ -46,7 +46,7 @@ PartitioningHeuristicStaticMulti::PartitioningHeuristicStaticMulti(
    @param[in] nbVar, the number of variables.
    @param[in] sumSize, which give the number of literals.
  */
-PartitioningHeuristicStaticMulti::PartitioningHeuristicStaticMulti(
+PartitioningHeuristicStaticMultiProj::PartitioningHeuristicStaticMultiProj(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, int nbClause,
     int nbVar, int sumSize, std::ostream &out)
     : PartitioningHeuristicStatic(vm, s, om, nbClause, nbVar, sumSize, out) {
@@ -62,7 +62,7 @@ PartitioningHeuristicStaticMulti::PartitioningHeuristicStaticMulti(
 /**
    Destructor.
  */
-PartitioningHeuristicStaticMulti::~PartitioningHeuristicStaticMulti() {
+PartitioningHeuristicStaticMultiProj::~PartitioningHeuristicStaticMultiProj() {
   if (m_partitionStaticDual)
     delete m_partitionStaticDual;
   if (m_partitionStaticPrimal)
@@ -72,7 +72,7 @@ PartitioningHeuristicStaticMulti::~PartitioningHeuristicStaticMulti() {
 /**
    Initialize the bucket level.
 */
-void PartitioningHeuristicStaticMulti::init(std::ostream &out) {
+void PartitioningHeuristicStaticMultiProj::init(std::ostream &out) {
   m_isInitialized = true;
 
   // the list of all variables.
@@ -145,7 +145,7 @@ void PartitioningHeuristicStaticMulti::init(std::ostream &out) {
 
    \return true if the tree decomposition is 'correct'.
  */
-bool PartitioningHeuristicStaticMulti::isStillOk(std::vector<Var> &component) {
+bool PartitioningHeuristicStaticMultiProj::isStillOk(std::vector<Var> &component) {
   return m_partitionStaticUsed->isStillOk(component);
 } // isStillOk
 
@@ -155,7 +155,7 @@ bool PartitioningHeuristicStaticMulti::isStillOk(std::vector<Var> &component) {
    @param[in] component, the set of variables.
    @param[out] cutSet, the cut set we compute.
 */
-void PartitioningHeuristicStaticMulti::computeCutSet(
+void PartitioningHeuristicStaticMultiProj::computeCutSet(
     std::vector<Var> &component, std::vector<Var> &cutSet) {
   m_partitionStaticUsed->computeCutSet(component, cutSet);
 } // component
@@ -168,7 +168,7 @@ void PartitioningHeuristicStaticMulti::computeCutSet(
    @param[in] equivVar, the list of equivalences.
    @param[out] bucketNumber, the decomposition tree in term of index.
 */
-void PartitioningHeuristicStaticMulti::computeDecomposition(
+void PartitioningHeuristicStaticMultiProj::computeDecomposition(
     std::vector<Var> &component, std::vector<Var> &equivClass,
     std::vector<std::vector<Var>> &equivVar) {
   m_isInitialized = true;

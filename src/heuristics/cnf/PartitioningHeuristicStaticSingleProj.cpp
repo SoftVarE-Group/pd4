@@ -183,15 +183,17 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
   while (stack.size()) {
     Strata &strata = stack.back();
     std::vector<unsigned> &current = strata.part;
-    bool hasProj = false;
+    int hasProj = 0;
 
     for (auto i : current) {
       Var v = considered[i];
-      hasProj |= is_proj[v];
+      hasProj += is_proj[v];
+      if(hasProj>3){
+          break;
+      }
     }
-    if (!hasProj) {
-      setBucketLevelFromEdges(savedHyperGraph, current, considered,
-                              m_om.getNbVariable());
+    if (hasProj<=3) {
+      setBucketLevelFromEdges(savedHyperGraph, current, considered,level);
       continue;
     }
     setHyperGraph(savedHyperGraph, weight, current, m_hypergraph);

@@ -35,7 +35,7 @@ SpecManagerCnfDyn::SpecManagerCnfDyn(ProblemManager &p)
 /**
    Update the occurrence list w.r.t. a new set of assigned variables.
    It's important that the order is conserved between the moment where
-   we assign and the moment we unassign.
+   we assign and tVsadshe moment we unassign.
 
    @param[in] lits, the new assigned variables
  */
@@ -44,7 +44,6 @@ void SpecManagerCnfDyn::preUpdate(std::vector<Lit> &lits) {
 
   for (auto &l : lits) {
     m_currentValue[l.var()] = l.sign() ? l_False : l_True;
-
     // not binary clauses.
     for (unsigned i = 0; i < m_occurrence[l.intern()].nbNotBin; i++) {
       int idxCl = m_occurrence[l.intern()].notBin[i];

@@ -69,6 +69,7 @@ ProblemManagerCnf::ProblemManagerCnf(std::string &nameFile,
       m_selected.push_back(result);
     }
   }
+  /*
   if (m_selected.size() != m_nbVar) {
     m_projMap = IDIDFunc(m_nbVar + 1, m_nbVar + 1);
     Var i = 1;
@@ -90,6 +91,7 @@ ProblemManagerCnf::ProblemManagerCnf(std::string &nameFile,
       }
     }
   }
+  */
 
   m_weightVar.resize(m_nbVar + 1, 0);
   for (unsigned i = 0; i <= m_nbVar; i++)

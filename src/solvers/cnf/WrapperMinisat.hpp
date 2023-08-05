@@ -38,6 +38,10 @@ class WrapperMinisat : public WrapperSolver {
 
  public:
   void initSolver(ProblemManager &p) override;
+  void initSolver(ProblemManager &p,std::vector<std::vector<Lit>>& learnt) override;
+  virtual ~WrapperMinisat(){}
+
+void addClause(std::vector<Lit>& cl,bool learnt);
   bool solve(std::vector<Var> &setOfVar) override;
   bool solve() override;
   void uncheckedEnqueue(Lit l) override;

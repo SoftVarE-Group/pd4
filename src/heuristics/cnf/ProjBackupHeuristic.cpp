@@ -35,6 +35,9 @@ ProjBackupHeuristic::~ProjBackupHeuristic() {
   if (m_hypergraphExtractor) {
     delete m_hypergraphExtractor;
   }
+  if(m_pm){
+      delete m_pm;
+  }
 }
 
 void ProjBackupHeuristic::computeEquivClass(
@@ -64,9 +67,6 @@ void ProjBackupHeuristic::computeEquivClass(
 bool ProjBackupHeuristic::computeCutSetDyn(ProjVars &component,
                                            std::vector<Var> &cutSet) {
   m_counter++;
-  if (component.nbProj < 100) {
-    return false;
-  }
 
   // search for equiv class if requiered.
   std::vector<Lit> unitEquiv;

@@ -124,7 +124,7 @@ public:
     assert(m_solver);
     m_panicMode = lastBreath.panic;
 
-    m_solver->initSolver(*m_problem);
+    m_solver->initSolver(*m_problem, lastBreath.learnt);
     m_solver->setCountConflict(lastBreath.countConflict, 1,
                                m_problem->getNbVar());
     m_solver->setNeedModel(true);
@@ -153,9 +153,14 @@ public:
     */
 
     m_currentPrioritySet.resize(m_problem->getNbVar() + 1, false);
-    m_hCutSet = PartitioningHeuristic::makePartitioningHeuristic(
-        vm, *m_specs, *m_solver, m_out);
-    // m_hCutSet = PartitioningHeuristic::makePartitioningHeuristicNone(m_out);
+    if ((double)m_specs->nbSelected() / (double)m_specs->getNbVariable() <
+            0.10 &&
+        (m_specs->getNbVariable() > 1000)) {
+      m_hCutSet = PartitioningHeuristic::makePartitioningHeuristicNone(m_out);
+    } else {
+      m_hCutSet = PartitioningHeuristic::makePartitioningHeuristic(
+          vm, *m_specs, *m_solver, m_out);
+    }
 
     assert(m_hVar && m_hPhase && m_hCutSet);
     m_cache = CacheManager<U>::makeCacheManager(vm, m_problem->getNbVar(),
@@ -185,6 +190,7 @@ public:
      Destructor.
    */
   ~ProjDpllStyleMethod() {
+    delete m_hBackUp;
     delete m_operation;
     delete m_problem;
     delete m_solver;
@@ -195,47 +201,36 @@ public:
     delete m_cache;
   } // destructor
   int m_frequency = 0;
-  std::vector<unsigned int> m_clauses_idx;
 
 private:
-  void reduceNProjVars(ProjVars &vars) {
-    if (vars.vars.size() < 10 || m_frequency % 100 != 0)
-      return;
+  int reduceNProjVars(ProjVars &vars) {
+    if (m_frequency % 10000 != 0)
+      return 0;
     m_frequency++;
+    int assume_npoj = 0;
+
     SpecManagerCnf *specs = ((SpecManagerCnf *)m_specs);
-    specs->getCurrentClauses(m_clauses_idx, vars.vars);
-    for (auto c_idx : m_clauses_idx) {
-      for (Lit l : specs->getClause(c_idx)) {
-        if (m_specs->isSelected(l.var()))
-          continue;
-        if (m_var_sign[l.var()] == 0) {
-          m_var_sign[l.var()] = l.sign() + 1;
-        } else if (m_var_sign[l.var()] != l.sign() + 1) {
-          m_var_sign[l.var()] = 3;
+    for (auto v : vars.vars) {
+      int p = specs->getNbOccurrence(Lit::makeLit(v, true));
+      if (p == 0) {
+        m_solver->pushAssumption(Lit::makeLit(v, false));
+        assume_npoj++;
+      } else {
+        int n = specs->getNbOccurrence(Lit::makeLit(v, false));
+        if (n == 0) {
+          m_solver->pushAssumption(Lit::makeLit(v, true));
+          assume_npoj++;
         }
       }
     }
-    for (Var v : vars.iter_nproj()) {
-      if (m_var_sign[v] == 1) {
-        m_solver->pushAssumption(Lit::makeLit(v, 0));
-      } else if (m_var_sign[v] == 2) {
-        m_solver->pushAssumption(Lit::makeLit(v, 1));
-      }
-    }
+    return assume_npoj;
   }
-  void reduceNProjVarsPost(ProjVars &vars) {
-    int cnt = 0;
-    for (Var v : vars.iter_nproj()) {
-      if (m_var_sign[v] == 1 || m_var_sign[v] == 2) {
-        cnt++;
-      }
+  void reduceNProjVarsPost(int assume_nproj) {
+      if(assume_nproj>0){
+          std::cout<<"Nuked "<<assume_nproj<<std::endl;
 
-      m_var_sign[v] = 0;
-    }
-    if (cnt > 0) {
-      std::cout << "Nuked " << cnt << std::endl;
-    }
-    m_solver->popAssumption(cnt);
+      }
+    m_solver->popAssumption(assume_nproj);
   }
   void completeCutset(std::vector<Var> &vars) {}
   /**
@@ -428,10 +423,10 @@ private:
              std::vector<Var> &freeVariable, std::ostream &out) {
     showRun(out);
     m_nbCallCall++;
-    reduceNProjVars(setOfVar);
+    int assume_nproj = reduceNProjVars(setOfVar);
 
     if (!m_solver->solve(setOfVar.vars)) {
-      reduceNProjVarsPost(setOfVar);
+      reduceNProjVarsPost(assume_nproj);
       return m_operation->manageBottom();
     }
 
@@ -447,6 +442,13 @@ private:
         std::partition(varConnected.begin(), varConnected.end(),
                        [&](const ProjVars &comp) { return comp.nbProj > 0; }),
         varConnected.end());
+    /*std::sort(varConnected.begin(), varConnected.end(),
+              [](ProjVars &a, ProjVars &b) {
+                bool clean_a = a.vars.size() == a.nbProj;
+                bool clean_b = b.vars.size() == b.nbProj;
+                return clean_a > clean_b;
+              });
+    */
     nbComponent = varConnected.size();
 
     // consider each connected component.
@@ -476,14 +478,14 @@ private:
 
       m_specs->postUpdate(unitsLit);
       expelNoDecisionLit(unitsLit);
-      reduceNProjVarsPost(setOfVar);
+      reduceNProjVarsPost(assume_nproj);
 
       return m_operation->manageDecomposableAnd(tab, nbComponent);
     } // else we have a tautology
 
     m_specs->postUpdate(unitsLit);
     expelNoDecisionLit(unitsLit);
-    reduceNProjVarsPost(setOfVar);
+    reduceNProjVarsPost(assume_nproj);
 
     return m_operation->createTop();
   } // compute_
@@ -501,7 +503,7 @@ private:
 
   /**
    * @brief Unset the Current Priority.
-   *
+
    * @param cutSet is the set of variables that become decision variables.
    */
   inline void unsetCurrentPriority(std::vector<Var> &cutSet) {
@@ -518,6 +520,31 @@ private:
 
      \return the compiled formula.
   */
+  bool cutset_ok(ProjVars &vars, std::vector<Var> &cut) {
+    double cutsize = cut.size();
+    double cutsize_proj = 0;
+    for (auto v : cut) {
+      if (m_specs->isSelected(v)) {
+        cutsize_proj += 1;
+      }
+    }
+    double proj_vars = vars.nbProj;
+    double cover = cutsize_proj / proj_vars;
+
+    double cleaness = cutsize_proj / cutsize;
+    if (cutsize_proj > 0) {
+      // std::cout << "Cover " << cover << std::endl;
+      // std::cout << cleaness << std::endl;
+    }
+
+    if (cover > 0.1) {
+      return false;
+    }
+    if (cleaness < 0.1) {
+      return false;
+    }
+    return cutsize_proj > 0;
+  }
   U computeDecisionNode(ProjVars &connected, bool emergencyMode,
                         std::ostream &out) {
     std::vector<Var> cutSet;
@@ -533,10 +560,13 @@ private:
 
     if (hasVariable && !hasPriority && m_hCutSet->isReady(connected.vars)) {
       m_hCutSet->computeCutSet(connected.vars, cutSet);
+
       for (int i = 0; i < cutSet.size(); i++) {
         cut_valid |= m_specs->isSelected(cutSet[i]) &&
                      !m_specs->varIsAssigned(cutSet[i]);
       }
+
+      cut_valid = cutset_ok(connected, cutSet);
       if (cut_valid) {
         setCurrentPriority(cutSet);
 
@@ -553,6 +583,7 @@ private:
             std::cout << "Saved cut" << std::endl;
             setCurrentPriority(cutSet);
           }
+          emergencyMode = true;
         }
       }
       m_callPartitioner++;
@@ -563,10 +594,8 @@ private:
     if (cut_valid || hasPriority) {
       v = m_hVar->selectVariable(connected.vars, *m_specs,
                                  m_currentPrioritySet);
-      emergencyMode = false;
     } else {
       m_failed_cuts += 1;
-      emergencyMode = true;
       v = m_hVar->selectVariable(connected.vars, *m_specs);
     }
 

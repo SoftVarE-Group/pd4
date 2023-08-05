@@ -51,6 +51,7 @@ protected:
 
   std::vector<bool> m_inCurrentComponent;
   std::vector<DataOccurrence> m_occurrence;
+  std::vector<double> cleaness;
   int *m_dataOccurrenceMemory;
 
   std::vector<InfoCluster> m_infoCluster;

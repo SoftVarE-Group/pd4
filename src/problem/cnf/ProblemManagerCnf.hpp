@@ -24,20 +24,25 @@
 
 namespace d4 {
 class ProblemManagerCnf : public ProblemManager {
-private:
+protected:
   std::vector<std::vector<Lit>> m_clauses;
+  std::vector<std::vector<Lit>> m_learnt;
   IDIDFunc m_projMap;
 
 public:
   ProblemManagerCnf();
   ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
                     std::vector<double> &weightVar, std::vector<Var> &selected);
+
   ProblemManagerCnf(ProblemManager *problem);
+
 
   ProblemManagerCnf(std::string &nameFile, std::string &proj_vars);
   ~ProblemManagerCnf();
   void display(std::ostream &out) override;
   std::vector<std::vector<Lit>> &getClauses() { return m_clauses; }
+  std::vector<std::vector<Lit>> &getLearnt() { return m_learnt; }
+  IDIDFunc &getProjMap() { return m_projMap; }
   void setClauses(std::vector<std::vector<Lit>> &clauses) {
     m_clauses = clauses;
   }

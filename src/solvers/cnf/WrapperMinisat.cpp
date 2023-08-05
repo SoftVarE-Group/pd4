@@ -35,6 +35,19 @@ using minisat::toInt;
 
    @param[in] p, the problem we want to link with the SAT solver.
  */
+
+void WrapperMinisat::addClause(std::vector<Lit>& cl,bool learnt){
+    std::vector<minisat::Lit> ps(cl.size());
+    for(int i = 0;i<cl.size();i++){
+        ps[i] = minisat::mkLit(cl[i].var(),cl[i].sign());
+    }
+    minisat::CRef cr = s.ca.alloc(ps, learnt);
+	if(!learnt)
+		s.clauses.push(cr);
+	else
+		s.learnts.push(cr);
+	s.attachClause(cr);
+}
 void WrapperMinisat::initSolver(ProblemManager &p) {
   try {
     ProblemManagerCnf &pcnf = dynamic_cast<ProblemManagerCnf &>(p);
@@ -61,6 +74,40 @@ void WrapperMinisat::initSolver(ProblemManager &p) {
   m_isInAssumption.resize(p.getNbVar() + 1, 0);
 }  // initSolver
 
+void WrapperMinisat:: initSolver(ProblemManager &p,std::vector<std::vector<Lit>>& learnt){
+  try {
+    ProblemManagerCnf &pcnf = dynamic_cast<ProblemManagerCnf &>(p);
+
+    // force glucose to be in incremental mode in order to restart just after
+    // the assumptions.
+    // s.setIncrementalMode();
+
+    // say to the solver we have pcnf.getNbVar() variables.
+    while ((unsigned)s.nVars() <= pcnf.getNbVar()) s.newVar();
+    m_model.resize(pcnf.getNbVar() + 1, l_Undef);
+
+    // load the clauses
+    std::vector<std::vector<Lit>> &clauses = pcnf.getClauses();
+    for (auto &cl : clauses) {
+      minisat::vec<minisat::Lit> lits;
+      for (auto &l : cl) lits.push(minisat::mkLit(l.var(), l.sign()));
+      s.addClause(lits);
+    }
+    for(auto cl:learnt){
+        addClause(cl,true);
+    }
+  } catch (std::bad_cast &bc) {
+    std::cerr << "bad_cast caught: " << bc.what() << '\n';
+    std::cerr << "A CNF formula was expeted\n";
+  }
+
+  m_activeModel = false;
+  m_needModel = false;
+  setNeedModel(m_needModel);
+  m_isInAssumption.resize(p.getNbVar() + 1, 0);
+
+
+}
 /**
    Call the SAT solver and return its result.
 
