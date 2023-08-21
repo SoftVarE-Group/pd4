@@ -172,6 +172,7 @@ void MethodManager::displayInfoVariables(ProblemManager *problem,
     for (auto v : indVar) out << v << " ";
     out << "\nc\n";
   }
+
 }  // displayInfoProjected
 
 /**

@@ -16,28 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <cassert>
-#include <src/problem/ProblemManager.hpp>
-#include <src/problem/ProblemTypes.hpp>
-#include <vector>
+#include <src/solvers/ActivityManager.hpp>
+#include <src/specs/cnf/SpecManagerCnf.hpp>
 
-#include "SpecManagerCnf.hpp"
+#include "../ScoringMethod.hpp"
 
 namespace d4 {
-class SpecManagerCnfDyn : public SpecManagerCnf {
- protected:
-  std::vector<int> m_reviewWatcher;
-  void initClauses(std::vector<std::vector<Lit>> &clauses);
+class ScoringMethodPVsads : public ScoringMethod {
+ private:
+  SpecManagerCnf &om;
+  ActivityManager &activity;
+  int x,y,z;
 
  public:
-  SpecManagerCnfDyn(ProblemManager &p);
-
-  void preUpdate(std::vector<Lit> &lits);
-  void postUpdate(std::vector<Lit> &lits);
-
-  // we cannot use this function here
-  inline void initialize(std::vector<Var> &setOfVar, std::vector<Lit> &units) {
-    assert(0);
-  }
+  ScoringMethodPVsads(SpecManagerCnf &o, ActivityManager &a,int x,int y,int z);
+  double computeScore(Var v);
 };
 }  // namespace d4

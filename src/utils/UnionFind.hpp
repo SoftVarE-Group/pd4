@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <vector>
 struct UnionFind {
+
+  int cnt;
   std::vector<int> parent;
   std::vector<int> size;
-  UnionFind(int s) : parent(s), size(s) { clear(); }
+  UnionFind(int s) :cnt(s), parent(s), size(s) { clear(); }
 
   int find_set(int v) {
     if (v == parent[v])
@@ -17,6 +19,7 @@ struct UnionFind {
     a = find_set(a);
     b = find_set(b);
     if (a != b) {
+      cnt--;
       if (size[a] < size[b])
         std::swap(a, b);
       parent[b] = a;
@@ -28,5 +31,6 @@ struct UnionFind {
       parent[i] = i;
       size[i] = 1;
     }
+    cnt = parent.size();
   }
 };

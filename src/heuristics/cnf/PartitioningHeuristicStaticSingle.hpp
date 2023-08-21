@@ -19,6 +19,8 @@
 
 #include <ostream>
 
+
+#include <fstream>
 #include "PartitioningHeuristicStatic.hpp"
 #include "PhaseSelectorManager.hpp"
 
@@ -47,7 +49,9 @@ struct DistribSize {
   }
 };
 
+
 class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
+
  protected:
   struct Strata {
     unsigned fatherId;
@@ -60,6 +64,8 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
   };
 
   const unsigned LIMIT = 10;
+
+    std::ofstream m_log;
 
   // to store the hypergraph, and then avoid reallocated memory.
   HyperGraph m_hypergraph;
@@ -115,7 +121,7 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
 
   virtual ~PartitioningHeuristicStaticSingle();
 
-  void computeDecomposition(std::vector<Var> &component,
+  virtual void computeDecomposition(std::vector<Var> &component,
                             std::vector<Var> &equivClass,
                             std::vector<std::vector<Var>> &equivVar,
                             std::vector<unsigned> &bucketNumber);

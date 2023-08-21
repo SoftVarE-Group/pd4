@@ -46,7 +46,6 @@ class BucketManager {
  protected:
   BucketAllocator *m_bucketAllocator;
   CachedBucket<T> m_bucket;
-  CacheManager<T> *m_cache;  // the cache linked with this BucketManager.
 
  public:
   virtual ~BucketManager() {

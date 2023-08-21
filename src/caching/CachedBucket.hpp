@@ -44,7 +44,7 @@ class CachedBucket {
 
   inline u_int64_t getInfo() { return header.info1; }
   inline void szData(int s) { header.szData(s); }
-  inline unsigned szData() { return header.szData(); }
+  inline unsigned szData()const { return header.szData(); }
   inline unsigned nbVar() { return header.nbVar(); }
   inline void reset() { header.reset(); }
 

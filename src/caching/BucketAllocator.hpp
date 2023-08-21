@@ -28,16 +28,16 @@ class BucketAllocator {
  private:
   std::vector<char *> m_allocateData;
   char *m_data = NULL;
-  unsigned long m_sizeFirstPage;
-  unsigned long m_sizeAdditionalPage;
-  unsigned long m_sizeData;
-  unsigned long m_posInData;
+  size_t m_sizeFirstPage;
+  size_t m_sizeAdditionalPage;
+  size_t m_sizeData;
+  size_t m_posInData;
 
   // freespace[i][j] points to a free memory space of size i
   std::vector<std::vector<char *>> m_freeSpace;
-  unsigned long int m_allMemory;
-  unsigned long int m_freeMemory;
-  unsigned long int m_usedMemory;
+  size_t m_allMemory;
+  size_t m_freeMemory;
+  size_t m_usedMemory;
   bool isInit = false;
   bool cleanup = true;
   bool m_consumedMemory = false;
@@ -57,14 +57,14 @@ class BucketAllocator {
   inline bool getIsInit() { return isInit; }
   inline void setIsInit(bool v) { isInit = v; }
 
-  inline unsigned long int usedMemory() { return m_usedMemory; }
+  inline size_t usedMemory() { return m_usedMemory; }
 
   inline double remainingMemory() {
     return ((double)m_freeMemory + (m_sizeData - m_posInData)) /
            (double)m_allMemory;
   }  // remainingMemory
 
-  void init(unsigned long sizeFirstPage, unsigned long sizeAdditionalPage);
+  void init(size_t sizeFirstPage, size_t sizeAdditionalPage);
 
   char *getArray(unsigned size);
 

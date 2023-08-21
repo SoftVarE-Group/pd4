@@ -30,9 +30,9 @@ namespace d4 {
 struct SpecClauseInfo {
   unsigned nbSat;
   unsigned nbUnsat;
+  unsigned nbUnsatProj;
   Lit watcher;
-
-  SpecClauseInfo() : nbSat(0), nbUnsat(0), watcher(lit_Undef) { ; }
+  SpecClauseInfo() : nbSat(0), nbUnsat(0),nbUnsatProj(0), watcher(lit_Undef) { ; }
 };
 
 struct InfoCluster {
@@ -71,6 +71,7 @@ protected:
 public:
   SpecManagerCnf(ProblemManager &p);
   ~SpecManagerCnf();
+  double computeCleaness();
 
   int computeConnectedComponent(std::vector<std::vector<Var>> &varConnected,
                                 std::vector<Var> &setOfVar,
@@ -115,6 +116,9 @@ public:
   }
   inline int getNbClause(Var v) {
     return getNbClause(Lit::makeLitFalse(v)) + getNbClause(Lit::makeLitTrue(v));
+  }
+  inline int getNbMixedClause(Var v) {
+    return m_occurrence[Lit::makeLitTrue(v).intern()].nbMixed+m_occurrence[Lit::makeLitFalse(v).intern()].nbMixed;
   }
 
   inline unsigned getNbClause(Lit l) {

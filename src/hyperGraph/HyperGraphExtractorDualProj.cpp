@@ -50,7 +50,6 @@ void HyperGraphExtractorDualProj::constructHyperGraph(
           }
         }
       }
-
       m_markedVar[v] = true;
     }
 

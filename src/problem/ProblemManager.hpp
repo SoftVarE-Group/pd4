@@ -43,6 +43,9 @@ class ProblemManager {
   unsigned getNbVar() { return m_nbVar; }
   void setNbVar(int n) { m_nbVar = n; }
 
+  virtual void normalize() = 0;
+  virtual void normalizeInner() = 0;
+
   virtual void display(std::ostream &out) = 0;
   virtual void displayStat(std::ostream &out, std::string startLine) = 0;
   virtual ProblemManager *getUnsatProblem() = 0;

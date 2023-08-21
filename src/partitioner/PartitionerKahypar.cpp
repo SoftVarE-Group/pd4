@@ -94,7 +94,7 @@ void PartitionerKahypar::computePartition(HyperGraph &hypergraph, Level level,
   const kahypar_hypernode_id_t num_vertices = elts.size();
   const kahypar_hyperedge_id_t num_hyperedges = sizeXpins;
 
-  const double imbalance = 0.1;
+  const double imbalance = 0.05;
   const kahypar_partition_id_t k = 2;
 
   kahypar_hyperedge_weight_t objective = 0;

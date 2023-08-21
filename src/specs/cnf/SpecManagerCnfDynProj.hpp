@@ -21,17 +21,20 @@
 #include <src/problem/ProblemTypes.hpp>
 #include <vector>
 
-#include "SpecManagerCnf.hpp"
+#include "SpecManagerCnfDyn.hpp"
 
+struct ProjClauseInfo{
+    int nbProj;
+    int nbNProj;
+};
 namespace d4 {
-class SpecManagerCnfDyn : public SpecManagerCnf {
- protected:
-  std::vector<int> m_reviewWatcher;
-  void initClauses(std::vector<std::vector<Lit>> &clauses);
-
+class SpecManagerCnfDynProj : public SpecManagerCnfDyn {
+ private:
+    std::vector<bool> m_is_mixed;
+    std::vector<ProjClauseInfo> m_clause_proj_vars;
  public:
-  SpecManagerCnfDyn(ProblemManager &p);
-
+  SpecManagerCnfDynProj(ProblemManager &p);
+  virtual ~SpecManagerCnfDynProj();
   void preUpdate(std::vector<Lit> &lits);
   void postUpdate(std::vector<Lit> &lits);
 

@@ -1,8 +1,8 @@
-#include "ProjBackupHeuristic.hpp"
+#include "ProjBackupHeuristicHypergraph.hpp"
 #include "src/hyperGraph/HyperGraphExtractorDualProj.hpp"
 
 namespace d4 {
-ProjBackupHeuristic::ProjBackupHeuristic(po::variables_map &vm, SpecManager &om,
+ProjBackupHeuristicHypergraph::ProjBackupHeuristicHypergraph(po::variables_map &vm, SpecManager &om,
                                          WrapperSolver &s, std::ostream &out)
     : m_om(dynamic_cast<SpecManagerCnf &>(om)), m_s(s) {
   m_nbVar = m_om.getNbVariable();
@@ -31,7 +31,7 @@ ProjBackupHeuristic::ProjBackupHeuristic(po::variables_map &vm, SpecManager &om,
       vm["partitioning-heuristic-partitioner-np-cost"].as<int>());
 
 } // constructor
-ProjBackupHeuristic::~ProjBackupHeuristic() {
+ProjBackupHeuristicHypergraph::~ProjBackupHeuristicHypergraph() {
   if (m_hypergraphExtractor) {
     delete m_hypergraphExtractor;
   }
@@ -40,7 +40,7 @@ ProjBackupHeuristic::~ProjBackupHeuristic() {
   }
 }
 
-void ProjBackupHeuristic::computeEquivClass(
+void ProjBackupHeuristicHypergraph::computeEquivClass(
     std::vector<Var> &component, std::vector<Lit> &unitEquiv,
     std::vector<Var> &equivClass, std::vector<std::vector<Var>> &equivVar) {
   if (m_equivSimp) {
@@ -64,7 +64,7 @@ void ProjBackupHeuristic::computeEquivClass(
   }
 } // computeEquivclass
 
-bool ProjBackupHeuristic::computeCutSetDyn(ProjVars &component,
+bool ProjBackupHeuristicHypergraph::computeCutSetDyn(ProjVars &component,
                                            std::vector<Var> &cutSet) {
   m_counter++;
 

@@ -32,70 +32,12 @@ ProblemManagerCnf::ProblemManagerCnf(std::string &nameFile,
                                      std::string &proj_vars) {
   ParserDimacs parser;
   m_nbVar = parser.parse_DIMACS(nameFile, this);
-  if (proj_vars != "") {
-    std::ifstream f(proj_vars);
-    std::string buf((std::istreambuf_iterator<char>(f)),
-                    std::istreambuf_iterator<char>());
-    m_selected.clear();
-    size_t offset = 0;
-    auto skip_ws = [&]() {
-      while (offset < buf.size()) {
-        if (std::isalnum(buf[offset])) {
-          return true;
-        }
-        offset++;
-      }
-      return false;
-    };
-    auto read_word = [&]() {
-      while (offset < buf.size()) {
-        if (!std::isalnum(buf[offset])) {
-          break;
-        }
-        offset++;
-      }
-    };
-    while (offset < buf.size()) {
-      if (!skip_ws()) {
-        break;
-      }
-      size_t begin = offset;
-      read_word();
-      size_t end = offset;
-      int result;
-      auto [ptr, ec] =
-          std::from_chars(buf.data() + begin, buf.data() + end, result);
-      assert(ec == std::errc());
-      m_selected.push_back(result);
-    }
-  }
-  /*
-  if (m_selected.size() != m_nbVar) {
-    m_projMap = IDIDFunc(m_nbVar + 1, m_nbVar + 1);
-    Var i = 1;
-    std::vector<bool> marked(m_nbVar);
-    for (Var v : m_selected) {
-      m_projMap[v] = i;
-      marked[v] = true;
-      i++;
-    }
-    for (Var v = 1; v < m_nbVar + 1; v++) {
-      if (!marked[v]) {
-        m_projMap[v] = i;
-        i++;
-      }
-    }
-    for (auto &c : m_clauses) {
-      for (auto &l : c) {
-        l = Lit::makeLit(m_projMap[l.var()], l.sign());
-      }
-    }
-  }
-  */
 
   m_weightVar.resize(m_nbVar + 1, 0);
   for (unsigned i = 0; i <= m_nbVar; i++)
     m_weightVar[i] = m_weightLit[i << 1] + m_weightLit[(i << 1) + 1];
+
+  normalize();
 } // constructor
 
 /**
@@ -146,6 +88,43 @@ ProblemManagerCnf::~ProblemManagerCnf() {
   m_nbVar = 0;
 } // destructor
 
+void ProblemManagerCnf::normalize() {
+  if (m_selected.size() != m_nbVar) {
+    m_projMap = IDIDFunc(m_nbVar + 1, m_nbVar + 1);
+    Var i = 1;
+    std::vector<bool> marked(m_nbVar);
+    for (Var v : m_selected) {
+      m_projMap[v] = i;
+      marked[v] = true;
+      i++;
+    }
+    for (Var v = 1; v < m_nbVar + 1; v++) {
+      if (!marked[v]) {
+        m_projMap[v] = i;
+        i++;
+      }
+    }
+    for (auto &c : m_clauses) {
+      for (auto &l : c) {
+        l = Lit::makeLit(m_projMap[l.var()], l.sign());
+      }
+    }
+    int sel = m_selected.size();
+    m_selected.clear();
+    for (int i = 1; i <= sel; i++) {
+      m_selected.push_back(i);
+    }
+  }
+  normalizeInner();
+}
+
+void ProblemManagerCnf::normalizeInner() {
+  for (auto& cl : m_clauses) {
+    std::sort(cl.begin(), cl.end(), [](Lit a, Lit b) {
+      return a.var() < b.var();
+    });
+  }
+}
 /**
  * @brief Get the Unsat ProblemManager object.
  *

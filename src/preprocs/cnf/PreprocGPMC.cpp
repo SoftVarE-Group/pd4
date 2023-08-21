@@ -15,32 +15,34 @@ ProblemManager *PreprocGPMC::run(ProblemManager *pin,
 
   ProblemManagerCnf *cnf = (ProblemManagerCnf *)pin;
 
-
-  
   int vars = cnf->getNbVar();
   int pvars = cnf->getSelectedVar().size();
   std::vector<Lit> asignes;
   std::vector<Lit> gmap;
   std::vector<std::vector<Lit>> clauses = cnf->getClauses();
-  if (!GPMC::simplify(clauses,pin->getSelectedVar(),lastBreath.learnt,vars,pvars,asignes,gmap,lastBreath.countConflict)){
-      return pin->getUnsatProblem();
+  if (!GPMC::simplify(clauses, pin->getSelectedVar(), lastBreath.learnt, vars,
+                      pvars, asignes, gmap, lastBreath.countConflict)) {
+    return pin->getUnsatProblem();
   }
-  std::vector<double> weight(vars+1,1.0); 
-  std::vector<double> weightLit((vars+1)*2,1.0);
+  std::vector<double> weight(vars + 1, 1.0);
+  std::vector<double> weightLit((vars + 1)<<2, 1.0);
+  for (unsigned i = 0; i <= vars; i++)
+    weight[i] = weightLit[i << 1] + weightLit[(i << 1) + 1];
   std::vector<Var> selected;
-  for(Var i = 1;i<pvars;i++){
-      selected.push_back(i);
+  for (Var i = 1; i <= pvars; i++) {
+    selected.push_back(i);
   }
-  std::cout<<"Vars "<<vars<<" PVars"<<pvars<<std::endl;
-  ProblemManagerCnf* out = new ProblemManagerCnf(vars,weightLit,weight,selected); 
+  ProblemManagerCnf *out =
+      new ProblemManagerCnf(vars, weightLit, weight, selected);
   out->getClauses() = std::move(clauses);
-  out->getProjMap() = std::move(cnf->getProjMap());
+  //out->getProjMap() = std::move(cnf->getProjMap());
 
   ws->initSolver(*out);
   lastBreath.panic = 0;
   lastBreath.countConflict.resize(out->getNbVar() + 1, 0);
 
-  if (!ws->solve()) return out->getUnsatProblem();
+  if (!ws->solve())
+    return out->getUnsatProblem();
   lastBreath.panic = ws->getNbConflict() > 100000;
 
   // get the activity given by the solver.
@@ -49,7 +51,8 @@ ProblemManager *PreprocGPMC::run(ProblemManager *pin,
 
   std::vector<Lit> units;
   ws->getUnits(units);
-  auto final =  out->getConditionedFormula(units); 
+  auto final = out->getConditionedFormula(units);
+  final->normalize();
 
   delete out;
   return final;

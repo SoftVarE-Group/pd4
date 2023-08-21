@@ -49,7 +49,7 @@ class DataInfo {
 
   virtual ~DataInfo() {}
 
-  inline unsigned szData() {
+  inline unsigned szData() const {
     return ((uint64_t)info1 >> 21) & (((uint64_t)1 << 21) - 1);
   }
   inline unsigned nbVar() {

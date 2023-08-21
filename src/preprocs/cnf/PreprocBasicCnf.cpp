@@ -57,6 +57,8 @@ ProblemManager *PreprocBasicCnf::run(ProblemManager *pin,
 
   std::vector<Lit> units;
   ws->getUnits(units);
-  return pin->getConditionedFormula(units);
+  auto out  =pin->getConditionedFormula(units);
+  out->normalize();
+  return out;
 }  // run
 }  // namespace d4

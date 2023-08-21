@@ -64,7 +64,6 @@ class BucketManagerCnf : public BucketManager<T> {
                    unsigned long sizeAdditionalPage,
                    BucketAllocator *bucketAllocator)
       : m_specManager(occM) {
-    this->m_cache = cache;
     this->m_bucketAllocator = bucketAllocator;
     m_modeStore = mdStore;
     m_nbClauseCnf = occM.getNbClause();

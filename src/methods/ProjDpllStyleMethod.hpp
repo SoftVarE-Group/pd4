@@ -19,7 +19,6 @@
 #pragma once
 
 #include "src/heuristics/cnf/PartitioningHeuristicBipartiteDual.hpp"
-#include "src/heuristics/cnf/ProjSignHeuristic.hpp"
 #include <algorithm>
 #include <boost/program_options.hpp>
 #include <ctime>
@@ -35,8 +34,8 @@
 #include "src/caching/TmpEntry.hpp"
 #include "src/heuristics/PartitioningHeuristic.hpp"
 #include "src/heuristics/PhaseHeuristic.hpp"
+#include "src/heuristics/ProjBackupHeuristic.hpp"
 #include "src/heuristics/ScoringMethod.hpp"
-#include "src/heuristics/cnf/ProjBackupHeuristic.hpp"
 #include "src/preprocs/PreprocManager.hpp"
 #include "src/problem/ProblemManager.hpp"
 #include "src/problem/ProblemTypes.hpp"
@@ -93,7 +92,7 @@ private:
   ScoringMethod *m_hVar;
   PhaseHeuristic *m_hPhase;
   PartitioningHeuristic *m_hCutSet;
-  ProjBackupHeuristic *m_hBackUp;
+  std::unique_ptr<ProjBackupHeuristic> m_hBackUp;
 
   TmpEntry<U> NULL_CACHE_ENTRY;
   CacheManager<U> *m_cache;
@@ -102,7 +101,6 @@ private:
 
   Operation<T, U> *m_operation;
   std::vector<int> m_var_sign;
-  ProjSignHeuristic m_hSign;
 
 public:
   /**
@@ -182,7 +180,7 @@ public:
     m_operation = static_cast<Operation<T, U> *>(op);
     m_out << "c\n";
     m_var_sign.resize(m_specs->getNbVariable() + 1, 0);
-    m_hBackUp = new ProjBackupHeuristic(vm, *m_specs, *m_solver, m_out);
+    m_hBackUp = ProjBackupHeuristic::make(vm, *m_specs, *m_solver, m_out);
 
   } // constructor
 
@@ -190,7 +188,6 @@ public:
      Destructor.
    */
   ~ProjDpllStyleMethod() {
-    delete m_hBackUp;
     delete m_operation;
     delete m_problem;
     delete m_solver;
@@ -204,13 +201,14 @@ public:
 
 private:
   int reduceNProjVars(ProjVars &vars) {
-    if (m_frequency % 10000 != 0)
+    if (m_frequency % 100000 != 0 )
       return 0;
     m_frequency++;
     int assume_npoj = 0;
 
     SpecManagerCnf *specs = ((SpecManagerCnf *)m_specs);
-    for (auto v : vars.vars) {
+    // specs->computeCleaness();
+    for (auto v : vars.iter_nproj()) {
       int p = specs->getNbOccurrence(Lit::makeLit(v, true));
       if (p == 0) {
         m_solver->pushAssumption(Lit::makeLit(v, false));
@@ -226,10 +224,9 @@ private:
     return assume_npoj;
   }
   void reduceNProjVarsPost(int assume_nproj) {
-      if(assume_nproj>0){
-          std::cout<<"Nuked "<<assume_nproj<<std::endl;
-
-      }
+    if (assume_nproj > 0) {
+      std::cout << "Nuked " << assume_nproj << std::endl;
+    }
     m_solver->popAssumption(assume_nproj);
   }
   void completeCutset(std::vector<Var> &vars) {}
@@ -442,13 +439,14 @@ private:
         std::partition(varConnected.begin(), varConnected.end(),
                        [&](const ProjVars &comp) { return comp.nbProj > 0; }),
         varConnected.end());
-    /*std::sort(varConnected.begin(), varConnected.end(),
+
+    std::sort(varConnected.begin(), varConnected.end(),
               [](ProjVars &a, ProjVars &b) {
                 bool clean_a = a.vars.size() == a.nbProj;
                 bool clean_b = b.vars.size() == b.nbProj;
                 return clean_a > clean_b;
               });
-    */
+
     nbComponent = varConnected.size();
 
     // consider each connected component.
@@ -520,31 +518,7 @@ private:
 
      \return the compiled formula.
   */
-  bool cutset_ok(ProjVars &vars, std::vector<Var> &cut) {
-    double cutsize = cut.size();
-    double cutsize_proj = 0;
-    for (auto v : cut) {
-      if (m_specs->isSelected(v)) {
-        cutsize_proj += 1;
-      }
-    }
-    double proj_vars = vars.nbProj;
-    double cover = cutsize_proj / proj_vars;
-
-    double cleaness = cutsize_proj / cutsize;
-    if (cutsize_proj > 0) {
-      // std::cout << "Cover " << cover << std::endl;
-      // std::cout << cleaness << std::endl;
-    }
-
-    if (cover > 0.1) {
-      return false;
-    }
-    if (cleaness < 0.1) {
-      return false;
-    }
-    return cutsize_proj > 0;
-  }
+  int test = true;
   U computeDecisionNode(ProjVars &connected, bool emergencyMode,
                         std::ostream &out) {
     std::vector<Var> cutSet;
@@ -560,29 +534,29 @@ private:
 
     if (hasVariable && !hasPriority && m_hCutSet->isReady(connected.vars)) {
       m_hCutSet->computeCutSet(connected.vars, cutSet);
+      if(test){
+          std::cout<<"Cut:"<<std::endl;
+          for(auto i:cutSet){
+              std::cout<<i<<" "<<std::endl;
+          }
+          std::cout<<std::endl;
+          test = false;
+
+      }
 
       for (int i = 0; i < cutSet.size(); i++) {
         cut_valid |= m_specs->isSelected(cutSet[i]) &&
                      !m_specs->varIsAssigned(cutSet[i]);
       }
 
-      cut_valid = cutset_ok(connected, cutSet);
+      // cut_valid = cutset_ok(connected, cutSet);
       if (cut_valid) {
         setCurrentPriority(cutSet);
 
       } else if (!emergencyMode) {
         cutSet.clear();
         if (m_hBackUp->computeCutSetDyn(connected, cutSet)) {
-          std::cout << "Attampted to save" << std::endl;
-          for (int i = 0; i < cutSet.size(); i++) {
-            cut_valid |= m_specs->isSelected(cutSet[i]) &&
-                         !m_specs->varIsAssigned(cutSet[i]);
-          }
-
-          if (cut_valid) {
-            std::cout << "Saved cut" << std::endl;
-            setCurrentPriority(cutSet);
-          }
+          setCurrentPriority(cutSet);
           emergencyMode = true;
         }
       }

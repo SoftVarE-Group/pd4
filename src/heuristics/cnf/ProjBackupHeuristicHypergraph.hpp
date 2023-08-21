@@ -1,12 +1,13 @@
-
+#pragma once
 #include "PartitioningHeuristicStatic.hpp"
 #include "src/hyperGraph/HyperGraphExtractor.hpp"
 #include "src/partitioner/PartitionerManager.hpp"
 #include "src/solvers/WrapperSolver.hpp"
 #include "src/specs/cnf/SpecManagerCnf.hpp"
 #include "src/utils/EquivExtractor.hpp"
+#include "src/heuristics/ProjBackupHeuristic.hpp"
 namespace d4 {
-class ProjBackupHeuristic {
+class ProjBackupHeuristicHypergraph:public ProjBackupHeuristic {
 private:
   SpecManagerCnf &m_om;
   WrapperSolver &m_s;
@@ -33,10 +34,10 @@ private:
                          std::vector<std::vector<Var>> &equivVar);
 
 public:
-  ProjBackupHeuristic(po::variables_map &vm, SpecManager &om, WrapperSolver &s,
+  ProjBackupHeuristicHypergraph(po::variables_map &vm, SpecManager &om, WrapperSolver &s,
                       std::ostream &out);
-  virtual ~ProjBackupHeuristic();
+  virtual ~ProjBackupHeuristicHypergraph();
 
-  bool computeCutSetDyn(ProjVars &component, std::vector<Var> &cutset);
+  bool computeCutSetDyn(ProjVars &component, std::vector<Var> &cutset) final;
 };
 } // namespace d4

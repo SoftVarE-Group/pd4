@@ -52,7 +52,10 @@ PartitioningHeuristicStaticSingleProj::PartitioningHeuristicStaticSingleProj(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, int nbClause,
     int nbVar, int sumSize, std::ostream &out)
     : PartitioningHeuristicStaticSingle(vm, s, om, nbClause, nbVar, sumSize,
-                                        out) {} // constructor
+                                        out) {
+    
+
+    } // constructor
 
 /**
    Save the current hyper graph.
@@ -96,6 +99,9 @@ void PartitioningHeuristicStaticSingleProj::setHyperGraph(
       edges[i + 1] = tmp[i];
     edges += *edges + 1;
     hypergraph.getCost()[hypergraph.getSize()] = savedCost[idxEdge];
+
+    //hypergraph.getCost()[hypergraph.getSize()] =
+    //    savedCost[idxEdge] > 1 ? std::min<int>(2, indices.size()*0.1) : 1;
     hypergraph.incSize();
   }
 }
@@ -135,6 +141,7 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
   m_hypergraphExtractor->constructHyperGraph(m_om, component, equivClass,
                                              equivVar, m_reduceFormula,
                                              considered, m_hypergraph);
+  /*
   std::cout << "CurrentHyper Graph:" << std::endl;
   for (auto edge : m_hypergraph) {
     std::cout << "Edge: " << edge.getId()
@@ -144,6 +151,7 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
       std::cout << v << " ";
     std::cout << std::endl;
   }
+  */
 
   // save the hyper graph.
   std::vector<std::vector<unsigned>> savedHyperGraph;
@@ -184,7 +192,6 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
     Strata &strata = stack.back();
     std::vector<unsigned> &current = strata.part;
     int hasProj = 0;
-
     for (auto i : current) {
       Var v = considered[i];
       hasProj += is_proj[v];
@@ -194,6 +201,7 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
     }
     if (hasProj<=3) {
       setBucketLevelFromEdges(savedHyperGraph, current, considered,level);
+      stack.pop_back();
       continue;
     }
     setHyperGraph(savedHyperGraph, weight, current, m_hypergraph);

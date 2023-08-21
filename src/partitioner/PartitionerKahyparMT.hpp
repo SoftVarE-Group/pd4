@@ -16,28 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <cassert>
-#include <src/problem/ProblemManager.hpp>
-#include <src/problem/ProblemTypes.hpp>
+
+#include <boost/program_options.hpp>
+#include <functional>
 #include <vector>
 
-#include "SpecManagerCnf.hpp"
+#include "3rdParty/mt-kahypar/include/libmtkahypar.h"
+#include "PartitionerManager.hpp"
 
 namespace d4 {
-class SpecManagerCnfDyn : public SpecManagerCnf {
- protected:
-  std::vector<int> m_reviewWatcher;
-  void initClauses(std::vector<std::vector<Lit>> &clauses);
+class PartitionerKahyparMT : public PartitionerManager {
+ private:
+  std::vector<bool> m_markedNodes;
+  std::vector<int> m_mapNodes;
+  std::unique_ptr<mt_kahypar_hyperedge_weight_t[]> m_cwghts;
+  std::unique_ptr<size_t[]> m_xpins;
+  std::unique_ptr<mt_kahypar_hyperedge_id_t[]> m_pins;
+  std::vector<mt_kahypar_partition_id_t> m_partition;
+  mt_kahypar_context_s *context;
 
  public:
-  SpecManagerCnfDyn(ProblemManager &p);
+  PartitionerKahyparMT(unsigned maxNodes, unsigned maxEdges,
+                     unsigned maxSumEdgeSize, std::ostream &out);
 
-  void preUpdate(std::vector<Lit> &lits);
-  void postUpdate(std::vector<Lit> &lits);
-
-  // we cannot use this function here
-  inline void initialize(std::vector<Var> &setOfVar, std::vector<Lit> &units) {
-    assert(0);
-  }
+  ~PartitionerKahyparMT();
+  void computePartition(HyperGraph &hypergraph, Level level,
+                        std::vector<int> &partition);
 };
 }  // namespace d4

@@ -48,12 +48,17 @@ PartitioningHeuristicStaticSingle::PartitioningHeuristicStaticSingle(
    @param[in] nbVar, the number of variables.
    @param[in] sumSize, which give the number of literals.
  */
+#define LOG true
 PartitioningHeuristicStaticSingle::PartitioningHeuristicStaticSingle(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, int nbClause,
     int nbVar, int sumSize, std::ostream &out)
     : PartitioningHeuristicStatic(vm, s, om, nbClause, nbVar, sumSize, out) {
   m_bucketNumber.resize(m_nbVar + 2, 0);
   m_hypergraphExtractor = NULL;
+
+#if LOG
+  m_log.open("cutset.log");
+#endif
   m_phaseSelector =
       PhaseSelectorManager::makePhaseSelectorManager(vm, this, out);
   m_equivClass.resize(m_nbVar + 1, 0);
@@ -215,6 +220,14 @@ void PartitioningHeuristicStaticSingle::distributePartition(
   stack.pop_back();
 
   if (cutSet.size()) {
+#if LOG
+      m_log<<"Lvl: "<<level<<": ";
+    for(auto i:cutSet){
+        Var v = mappingVar[i];
+        m_log<<v<<" ";
+    }
+    m_log<<"\n";
+#endif
     setCutSetBucketLevelFromEdges(hypergraph, partition, cutSet, mappingVar,
                                   level);
     assert(fatherId < m_levelInfo.size());
@@ -409,6 +422,10 @@ DistribSize PartitioningHeuristicStaticSingle::computeDistribSize(
     for (auto &v : component)
       m_markedVar[m_equivClass[v]] = false;
   }
+
+#if LOG
+  m_log.close();
+#endif
 
   return {cutSize + failedCutSize, leftTreeSize, rightTreeSize, level};
 } // computeDistribSize

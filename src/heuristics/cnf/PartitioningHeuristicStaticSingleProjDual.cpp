@@ -66,7 +66,7 @@ PartitioningHeuristicStaticSingleProjDual::
                                              out);
 
   m_hypergraph.init(m_nbVar + m_nbClause + sumSize + 1, m_nbVar + 1);
-  int np_cost  = om.nbSelected()*0.10;
+  int np_cost  = 100;
   m_hypergraphExtractor = new HyperGraphExtractorDualProj(
       m_nbVar, m_nbClause,np_cost);
   m_maxNbNodes = m_nbClause + 1;

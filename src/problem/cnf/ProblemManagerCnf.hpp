@@ -39,6 +39,9 @@ public:
 
   ProblemManagerCnf(std::string &nameFile, std::string &proj_vars);
   ~ProblemManagerCnf();
+  void normalize() override;
+  void normalizeInner() override;
+
   void display(std::ostream &out) override;
   std::vector<std::vector<Lit>> &getClauses() { return m_clauses; }
   std::vector<std::vector<Lit>> &getLearnt() { return m_learnt; }
