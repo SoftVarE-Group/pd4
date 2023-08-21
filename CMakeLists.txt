@@ -25,15 +25,22 @@ set(HEADERS ${INCLUDES})
 
 set(Boost_USE_STATIC_LIBS ON)
 add_subdirectory(3rdParty/GPMC)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/kahypar/)
+add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so 
+                DEPENDS  {CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar
+                COMMAND rm build -f -r && mkdir build && cd build &&cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release  && cmake --build . --target mtkahypar )
 
+
+add_custom_target(mt-kahypar ALL DEPENDS ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so)
 FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 if (NOT DEFINED BUILD_MODE)
-   set(BUILD_MODE 1)
+   set(BUILD_MODE 0)
 endif()
 
 # build.
@@ -77,18 +84,24 @@ elseif(${BUILD_MODE} EQUAL 3)
   install(FILES ${HEADER} DESTINATION include/${CMAKE_PROJECT_NAME})
 else()  
 
-    set(CMAKE_BUILD_TYPE Release)
 # create an executable
     if(${BUILD_MODE} EQUAL debug)
         add_compile_options(-fsanitize=address)
         add_link_options(-fsanitize=address)
     endif()
     add_executable(d4 ${SRCS} ${HEADERS})
+    find_package(absl REQUIRED)
 
     message("Classical mode activated")
     target_compile_options(d4 PUBLIC -Wall -std=c++20 -Wno-class-memaccess -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses)
-    target_link_libraries(d4 gpmc)
-    target_link_libraries (d4 -lz -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
+    add_dependencies(d4 mt-kahypar)
+    target_link_libraries(d4 gpmc       
+    absl::any
+    absl::flat_hash_map)
+    target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so)
+    target_link_libraries (d4 -lz -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} 
+        ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a 
+        ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
 
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/d4
       DESTINATION bin

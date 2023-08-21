@@ -1,6 +1,17 @@
-sh build.sh
-cd build
-./d4 -i ../0.dimacs  -m proj-ddnnf-compiler   --partitioning-heuristic bipartition-dual-proj --partitioning-heuristic-partitioner kahypar  --partitioning-heuristic-simplification-equivalence false --partitioning-heuristic-partitioner-np-cost 101 --partitioning-heuristic-bipartite-phase-dynamic 0.1 --partitioning-heuristic-bipartite-phase proj
- 
+cd  build
+ninja
+./d4 -m proj-ddnnf-compiler   --partitioning-heuristic decomposition-static-proj-dual \
+    --partitioning-heuristic-partitioner mtkahypar  --partitioning-heuristic-simplification-equivalence true \
+    --partitioning-heuristic-partitioner-np-cost 100  \
+    -i  ~/projects/projected-ddnnf-compilation-eval/instances/bb/Smarch.embtoolkit/0.dimacs\
+    -p proj \
+    --cache-impl conf \
+    --proj-backup none\
+    --proj-backup-min-cover 0.4 \
+    --proj-backup-scoring-method 0 \
+    --occurrence-manager dynamic \
+    --scoring-method vsads \
+    --scoring-method-x 1 \
+    --scoring-method-y 128 \
+    --scoring-method-z 128 \
 
-./d4 -i ../0.dimacs  -m proj-ddnnf-compiler   --partitioning-heuristic decomposition-static-proj-dual --partitioning-heuristic-partitioner kahypar  --partitioning-heuristic-simplification-equivalence false --partitioning-heuristic-partitioner-np-cost 101 
