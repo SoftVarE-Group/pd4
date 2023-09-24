@@ -86,7 +86,6 @@ else()
 
     message("Classical mode activated")
     target_compile_options(d4 PUBLIC -Wall -std=c++20 -Wno-class-memaccess -march=native -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses -march=native)
-    add_dependencies(d4 mt-kahypar)
     target_link_libraries(d4 gpmc arjun)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so )
     target_link_libraries (d4 -lz -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} 
