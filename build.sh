@@ -56,8 +56,18 @@ then
     make -j
 fi
 
+if ! [ -f 3rdParty/mt-kahypar/build/lib/libmtkahypar.so ]
+then
+    cd $curRep
+    cd 3rdParty/mt-kahypar
+    mkdir -p build
+    cd build
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_DOWNLOAD_TBB=On
+    cmake --build . --target mtkahypar
+fi
+
 cd $curRep
 mkdir -p build
 cd build
-cmake -GNinja .. -DBUILD_MODE=debug 
+cmake -GNinja .. -DBUILD_MODE=$opt 
 ninja 

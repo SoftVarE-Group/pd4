@@ -31,13 +31,6 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/kahypar/)
-add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so 
-                DEPENDS  {CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar
-                COMMAND rm build -f -r && mkdir build && cd build &&cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DKAHYPAR_DOWNLOAD_TBB=On && cmake --build . --target mtkahypar )
-
-
-add_custom_target(mt-kahypar ALL DEPENDS ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so)
 FIND_PACKAGE(Boost COMPONENTS program_options iostreams  REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
