@@ -66,12 +66,13 @@ PartitioningHeuristicStaticSingleProjDual::
                                              out);
 
   m_hypergraph.init(m_nbVar + m_nbClause + sumSize + 1, m_nbVar + 1);
-  int np_cost  = 100;
   m_hypergraphExtractor = new HyperGraphExtractorDualProj(
-      m_nbVar, m_nbClause,np_cost);
+      m_nbVar, m_nbClause, (SpecManagerCnf &)om,
+      vm["partitioning-heuristic-partitioner-np-cost"].as<int>());
   m_maxNbNodes = m_nbClause + 1;
   m_maxNbEdges = m_nbVar + 1;
-  m_em = new EquivExtractor(m_om.getNbVariable());
+  //m_em = new EquivExtractorProj(&m_om);
+  m_em = new EquivExtractor(m_nbVar);
 } // constructor
 
 /**

@@ -25,10 +25,12 @@
 #include "MaxSharpSAT.hpp"
 #include "MinSharpSAT.hpp"
 #include "OperationManager.hpp"
+#include "ProjDpllStyleMethod.hpp"
 #include "ProjMCMethod.hpp"
 #include "src/exceptions/BadBehaviourException.hpp"
 #include "src/exceptions/FactoryException.hpp"
-#include "ProjDpllStyleMethod.hpp"
+#include "src/methods/CountingOperation.hpp"
+#include "src/methods/DecisionDNNFOperation.hpp"
 #include "src/problem/ProblemManager.hpp"
 
 namespace d4 {
@@ -59,7 +61,7 @@ MethodManager *MethodManager::makeMethodManager(po::variables_map &vm,
   delete initProblem;
 
   return ret;
-}  // makeMethodManager
+} // makeMethodManager
 
 /**
    Consider the option in order to generate an instance of the wanted method.
@@ -108,10 +110,37 @@ MethodManager *MethodManager::makeMethodManager(po::variables_map &vm,
 
   if (meth == "proj-ddnnf-compiler") {
     if (!isFloat)
-      return new ProjDpllStyleMethod<mpz::mpz_int, Node<mpz::mpz_int> *>(
+      return new ProjDpllStyleMethod<
+          mpz::mpz_int, Node<mpz::mpz_int> *,
+          DecisionDNNFOperation<mpz::mpz_int, Node<mpz::mpz_int> *>>(
           vm, meth, isFloat, runProblem, out, lastBreath);
     else
-      return new ProjDpllStyleMethod<mpz::mpf_float, Node<mpz::mpf_float> *>(
+      return new ProjDpllStyleMethod<
+          mpz::mpf_float, Node<mpz::mpf_float> *,
+          DecisionDNNFOperation<mpz::mpf_float, Node<mpz::mpf_float> *>>(
+          vm, meth, isFloat, runProblem, out, lastBreath);
+  }
+
+  if (meth == "proj-counting") {
+    if (!isFloat)
+      return new ProjDpllStyleMethod<
+          mpz::mpz_int, mpz::mpz_int,
+          CountingOperation<mpz::mpz_int>>(
+          vm, meth, isFloat, runProblem, out, lastBreath);
+    else
+      return new ProjDpllStyleMethod<
+          mpz::mpf_float, mpz::mpf_float,
+          CountingOperation<mpz::mpf_float>>(
+          vm, meth, isFloat, runProblem, out, lastBreath);
+  }
+  if (meth == "persistent-proj-ddnnf-compiler") {
+    if (!isFloat)
+      return new ProjDpllStyleMethod<mpz::mpz_int, size_t,
+                                     PersistentNodesOperation<mpz::mpz_int>>(
+          vm, meth, isFloat, runProblem, out, lastBreath);
+    else
+      return new ProjDpllStyleMethod<mpz::mpf_float, size_t,
+                                     PersistentNodesOperation<mpz::mpf_float>>(
           vm, meth, isFloat, runProblem, out, lastBreath);
   }
 
@@ -140,7 +169,7 @@ MethodManager *MethodManager::makeMethodManager(po::variables_map &vm,
   }
 
   throw(FactoryException("Cannot create a MethodManager", __FILE__, __LINE__));
-}  // makeMethodManager
+} // makeMethodManager
 
 /**
  * @brief Display the projected variables in order.
@@ -153,7 +182,8 @@ void MethodManager::displayInfoVariables(ProblemManager *problem,
   if (selected.size()) {
     out << "c\nc [PROJECTED VARIABLES] list: ";
     std::sort(selected.begin(), selected.end());
-    for (auto v : selected) out << v << " ";
+    for (auto v : selected)
+      out << v << " ";
     out << "\nc\n";
   }
 
@@ -161,7 +191,8 @@ void MethodManager::displayInfoVariables(ProblemManager *problem,
   if (maxVar.size()) {
     out << "c\nc [MAX VARIABLES] list: ";
     std::sort(maxVar.begin(), maxVar.end());
-    for (auto v : maxVar) out << v << " ";
+    for (auto v : maxVar)
+      out << v << " ";
     out << "\nc\n";
   }
 
@@ -169,11 +200,12 @@ void MethodManager::displayInfoVariables(ProblemManager *problem,
   if (indVar.size()) {
     out << "c\nc [IND VARIABLES] list: ";
     std::sort(indVar.begin(), indVar.end());
-    for (auto v : indVar) out << v << " ";
+    for (auto v : indVar)
+      out << v << " ";
     out << "\nc\n";
   }
 
-}  // displayInfoProjected
+} // displayInfoProjected
 
 /**
  * @brief Run the preproc method before constructing the method.
@@ -196,9 +228,9 @@ ProblemManager *MethodManager::runPreproc(po::variables_map &vm,
   problem->displayStat(out, "c [PREPROCESSED INPUT] ");
   out << "c\n";
   assert(problem);
-  delete preproc;  // the preproc won't be used.
+  delete preproc; // the preproc won't be used.
 
   return problem;
-}  // runPreproc
+} // runPreproc
 
-}  // namespace d4
+} // namespace d4

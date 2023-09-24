@@ -19,8 +19,8 @@
 #include <ostream>
 
 #include "PartitioningHeuristicStatic.hpp"
-#include "PartitioningHeuristicStaticSingleDual.hpp"
-#include "PartitioningHeuristicStaticSinglePrimal.hpp"
+#include "PartitioningHeuristicStaticSingleProjDual.hpp"
+#include "PartitioningHeuristicStaticSingleProjPrimal.hpp"
 #include "PhaseSelectorManager.hpp"
 
 namespace d4 {
@@ -29,7 +29,7 @@ class PhaseSelectorManager;
 class PartitioningHeuristicStaticMultiProj : public PartitioningHeuristicStatic {
  private:
   PartitioningHeuristicStaticSingle *m_partitionStaticDual;
-  PartitioningHeuristicStaticSinglePrimal *m_partitionStaticPrimal;
+  PartitioningHeuristicStaticSingleProjPrimal *m_partitionStaticPrimal;
   PartitioningHeuristicStaticSingle *m_partitionStaticUsed;
 
   double m_ratio;

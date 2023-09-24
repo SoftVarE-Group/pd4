@@ -63,7 +63,8 @@ PartitionerKahypar::~PartitionerKahypar() {
    @param[out] parition, the resulting partition (we suppose it is allocated).
  */
 void PartitionerKahypar::computePartition(HyperGraph &hypergraph, Level level,
-                                          std::vector<int> &partition) {
+                                          std::vector<int> &partition, int k,
+                                          float imb) {
   std::vector<unsigned> elts;
 
   // graph initialization and shift the hypergraph
@@ -94,8 +95,7 @@ void PartitionerKahypar::computePartition(HyperGraph &hypergraph, Level level,
   const kahypar_hypernode_id_t num_vertices = elts.size();
   const kahypar_hyperedge_id_t num_hyperedges = sizeXpins;
 
-  const double imbalance = 0.05;
-  const kahypar_partition_id_t k = 2;
+  const double imbalance = imb;
 
   kahypar_hyperedge_weight_t objective = 0;
   int *cost = hypergraph.getCost() ? hypergraph.getCost() : m_cwghts.get();
@@ -104,8 +104,10 @@ void PartitionerKahypar::computePartition(HyperGraph &hypergraph, Level level,
                     m_xpins.get(), m_pins.get(), &objective, context,
                     m_partition.data());
 
-  for (unsigned i = 0; i < elts.size(); i++)
+  for (unsigned i = 0; i < elts.size(); i++) {
+
     partition[elts[i]] = m_partition[i];
+  }
 } // computePartition
 
 } // namespace d4

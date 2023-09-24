@@ -18,25 +18,24 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "src/exceptions/NodeException.hpp"
 #include "src/problem/ProblemManager.hpp"
 
 namespace d4 {
+template <typename T> struct NullNumber {
+  operator T() { return T(0); }
+  operator unsigned(){return 0;}
+};
 
 using NormMap = std::vector<Lit>;
-template <class T, typename U>
-class DecomposableAndNode;
-template <class T, typename U>
-class BinaryDeterministicOrNode;
-template <class T, typename U>
-class UnaryNode;
-template <class T>
-class TrueNode;
-template <class T>
-class FalseNode;
+template <class T, typename U> class DecomposableAndNode;
+template <class T, typename U> class BinaryDeterministicOrNode;
+template <class T, typename U> class UnaryNode;
+template <class T> class TrueNode;
+template <class T> class FalseNode;
 
 enum TypeNode {
   TypeIteNode,
@@ -48,9 +47,8 @@ enum TypeNode {
 };
 enum ValueVar { isTrue, isFalse, isNotAssigned };
 
-template <class T>
-class Node {
- public:
+template <class T> class Node {
+public:
   struct {
     unsigned typeNode : 4;
     unsigned stamp : 28;
@@ -58,4 +56,4 @@ class Node {
 
   Node() { header = {0, 0}; }
 };
-}  // namespace d4
+} // namespace d4

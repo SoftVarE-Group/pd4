@@ -20,8 +20,51 @@
 #include <ostream>
 
 #include "src/utils/AtMost1Extractor.hpp"
+#include "src/utils/EquivExtractor.hpp"
+#include "src/utils/Proj.hpp"
+#include <numeric>
+#define LOG 0
 
 namespace d4 {
+
+namespace hyper_util {
+
+void saveHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
+                    std::vector<int> &savedCost, HyperGraph &h) {
+  for (auto edge : h) {
+    savedHyperGraph.push_back(std::vector<unsigned>());
+    std::vector<unsigned> &tmp = savedHyperGraph.back();
+    for (auto v : edge)
+      tmp.push_back(v);
+    savedCost.push_back(h.getCost()[edge.getId()]);
+  }
+}
+void setHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
+                   std::vector<int> &savedCost, std::vector<unsigned> &indices,
+                   HyperGraph &hypergraph) {
+
+  unsigned *edges = hypergraph.getEdges();
+  hypergraph.setSize(0);
+
+  for (auto idxEdge : indices) {
+    std::vector<unsigned> &tmp = savedHyperGraph[idxEdge];
+    if (!tmp.size())
+      continue;
+
+    *edges = tmp.size();
+    for (unsigned i = 0; i < tmp.size(); i++)
+      edges[i + 1] = tmp[i];
+    edges += *edges + 1;
+    hypergraph.getCost()[hypergraph.getSize()] = savedCost[idxEdge];
+
+    // hypergraph.getCost()[hypergraph.getSize()] =
+    //     savedCost[idxEdge] > 1 ? std::min<int>(2, indices.size()*0.1) : 1;
+    hypergraph.incSize();
+  }
+}
+
+} // namespace hyper_util
+
 /**
    Constructor.
 
@@ -53,58 +96,48 @@ PartitioningHeuristicStaticSingleProj::PartitioningHeuristicStaticSingleProj(
     int nbVar, int sumSize, std::ostream &out)
     : PartitioningHeuristicStaticSingle(vm, s, om, nbClause, nbVar, sumSize,
                                         out) {
-    
 
-    } // constructor
+  m_score = ScoringMethod::makeScoringMethod(vm, om, s, out);
+} // constructor
 
-/**
-   Save the current hyper graph.
-
-   @param[out] savedHyperGraph, the structure where is saved the graph.
-*/
-void PartitioningHeuristicStaticSingleProj::saveHyperGraph(
-    std::vector<std::vector<unsigned>> &savedHyperGraph,
-    std::vector<int> &savedCost) {
-  for (auto edge : m_hypergraph) {
-    savedHyperGraph.push_back(std::vector<unsigned>());
-    std::vector<unsigned> &tmp = savedHyperGraph.back();
-    for (auto v : edge)
-      tmp.push_back(v);
-    savedCost.push_back(m_hypergraph.getCost()[edge.getId()]);
+/*
+std::vector<int> get_cut(HyperGraph &h, const std::vector<int> &part,
+                         const std::vector<int> &map) {
+  std::vector<int> cut;
+  for (auto &e : h) {
+    int p = map[part[*e.begin()]];
+    for (auto v : e) {
+      if (p != map[part[v]]) {
+        cut.push_back(e.getId());
+        break;
+      }
+    }
   }
-} // savedHyperGraph
-
-/**
-   Set the hyper graph regarding the given set of variables and the saved
-   hyper graph.
-
-   @param[in] savedHyperGraph, the current hyper graph.
-   @param[in] indices, the current set of edges' indices.
-   @param[out] hypergraph, the computed hyper graph.
-*/
-void PartitioningHeuristicStaticSingleProj::setHyperGraph(
-    std::vector<std::vector<unsigned>> &savedHyperGraph,
-    std::vector<int> &savedCost, std::vector<unsigned> &indices,
-    HyperGraph &hypergraph) {
-  unsigned *edges = hypergraph.getEdges();
-  hypergraph.setSize(0);
-
-  for (auto idxEdge : indices) {
-    std::vector<unsigned> &tmp = savedHyperGraph[idxEdge];
-    if (!tmp.size())
-      continue;
-
-    *edges = tmp.size();
-    for (unsigned i = 0; i < tmp.size(); i++)
-      edges[i + 1] = tmp[i];
-    edges += *edges + 1;
-    hypergraph.getCost()[hypergraph.getSize()] = savedCost[idxEdge];
-
-    //hypergraph.getCost()[hypergraph.getSize()] =
-    //    savedCost[idxEdge] > 1 ? std::min<int>(2, indices.size()*0.1) : 1;
-    hypergraph.incSize();
+  return cut;
+}
+void reduce_multi_cut(HyperGraph &h,std::vector<bool> removed, std::vector<int>
+&part, int part_cnt) { size_t min_cost = std::numeric_limits<size_t>::max();
+  std::vector<int> map(part_cnt / 2, 0), min_map;
+  map.resize(part_cnt, 1);
+  while (std::next_permutation(map.begin(), map.end())) {
+    auto cut = get_cut(h, part, map);
+    size_t cost = 0;
+    for (auto e : cut) {
+      cost += h.getCost()[e];
+    }
+    if (cost < min_cost) {
+      min_cost = cost;
+      min_map = map;
+    }
+  }
+  for (auto i : get_cut(h, part, min_map)) {
+  }
+  std::cout<<"\n";
+  for (auto &p : part) {
+    p = map[p];
   }
 }
+*/
 /**
    Split and assign variables.
 
@@ -127,6 +160,386 @@ void PartitioningHeuristicStaticSingleProj::setHyperGraph(
    @param[in] equivVar, the list of equivalences.
    @param[out] bucketNumber, the decomposition tree in term of index.
 */
+
+std::vector<unsigned> get_cut(HyperGraph &h, const std::vector<int> &part,
+                              const std::vector<int> &map,
+                              const std::vector<int> &base_map) {
+
+  std::vector<unsigned> cut;
+  for (auto &e : h) {
+    int base = base_map[part[*e.begin()]];
+    if (base == -1) {
+      continue;
+    }
+    int p = map[base];
+    bool in_cut = false;
+    for (auto v : e) {
+      int base = base_map[part[v]];
+      if (base == -1) {
+        in_cut = false;
+        break;
+      }
+      if (p != map[base]) {
+        in_cut = true;
+      }
+    }
+    if (in_cut) {
+      cut.push_back(e.getId());
+    }
+  }
+  return cut;
+}
+
+void split(HyperGraph &h, const std::vector<int> &part,
+           const std::vector<int> &map, const std::vector<int> &base_map,
+           std::vector<unsigned> &cut, std::vector<unsigned> &indices0,
+           std::vector<unsigned> &indices1) {
+  for (auto &e : h) {
+    int base = base_map[part[*e.begin()]];
+    if (base == -1) {
+      continue;
+    }
+    int p = map[base];
+    bool in_cut = false;
+    for (auto v : e) {
+      int base = base_map[part[v]];
+      if (base == -1) {
+        in_cut = false;
+        break;
+      }
+      if (p != map[base]) {
+        in_cut = true;
+      }
+    }
+    if (in_cut) {
+      cut.push_back(e.getId());
+    } else if (p == 0) {
+      indices0.push_back(e.getId());
+    } else {
+      indices1.push_back(e.getId());
+    }
+  }
+}
+
+std::vector<int> optimize_multi_cut(HyperGraph &h, const std::vector<int> &part,
+                                    const std::vector<int> &base_map,
+                                    const int part_cnt) {
+  size_t min_cost = std::numeric_limits<size_t>::max();
+  std::vector<int> map(part_cnt / 2, 0), min_map;
+  map.resize(part_cnt, 1);
+  while (std::next_permutation(map.begin(), map.end())) {
+    auto cut = get_cut(h, part, map, base_map);
+    size_t cost = 0;
+    for (auto e : cut) {
+      cost += h.getCost()[e];
+    }
+    if (cost < min_cost) {
+      min_cost = cost;
+      min_map = map;
+    }
+  }
+  return map;
+}
+std::vector<int> reduce_map(std::vector<int> base_map,
+                            std::vector<int> reduction, int x) {
+  std::vector<int> out(base_map.size());
+  int z = 0;
+  for (int k = 0; k < out.size(); k++) {
+    if (base_map[k] == -1) {
+      out[k] = -1;
+    } else {
+      int p = reduction[base_map[k]];
+      if (p == x) {
+        out[k] = z;
+        z++;
+      } else {
+        out[k] = -1;
+      }
+    }
+  }
+  return out;
+}
+
+void PartitioningHeuristicStaticSingleProj::handle_multicut(
+    HyperGraph &hypergraph, std::vector<std::vector<unsigned>> &hypergraph_list,
+    std::vector<int> &partition, std::vector<unsigned> &mappingEdge,
+    std::vector<Var> &mappingVar, std::vector<Strata> &stack, unsigned &level) {
+  struct MultiCutLvl {
+    std::vector<int> part_map;
+    int depth;
+    unsigned fatherId;
+  };
+  std::vector<MultiCutLvl> lvls;
+  std::vector<int> inital_map(m_multi_lvl_cuts);
+  std::iota(inital_map.begin(), inital_map.end(), 0);
+  lvls.push_back({inital_map, 0, stack.back().fatherId});
+  auto push_new_lvl = [&](std::vector<unsigned> &indices,
+                          std::vector<int> base_map, std::vector<int> reduction,
+                          int depth, unsigned fatherId, int x) {
+    if (indices.size() > LIMIT) {
+      if ((1 << depth) == m_multi_lvl_cuts) {
+        stack.push_back(Strata{fatherId, indices});
+
+      } else {
+        lvls.push_back(
+            MultiCutLvl{.part_map = reduce_map(base_map, reduction, x),
+                        .depth = depth,
+                        .fatherId = fatherId});
+      }
+    } else {
+      assignLevel(hypergraph_list, fatherId, indices, mappingVar, level);
+    }
+  };
+  while (lvls.size()) {
+    auto lvl = std::move(lvls.back());
+    auto fatherId = lvl.fatherId;
+    lvls.pop_back();
+    std::cout << "Map: ";
+    for (auto m : lvl.part_map) {
+      std::cout << m << " ";
+    }
+    std::cout << std::endl;
+    std::vector<int> reduction_map =
+        optimize_multi_cut(hypergraph, partition, lvl.part_map,
+                           m_multi_lvl_cuts / (1 << (lvl.depth)));
+    std::vector<unsigned> cut, indices0, indices1;
+    split(hypergraph, partition, reduction_map, lvl.part_map, cut, indices0,
+          indices1);
+    unsigned currentId = (cut.size()) ? level : fatherId;
+    if (cut.size()) {
+#if LOG
+      m_log << "Lvl: " << level << ": ";
+      int c = 0;
+      for (auto i : cut) {
+        Var v = m_hypergraph.getCost()[i];
+        c += v;
+        m_log << v << ":";
+        m_log << mappingVar[i] << " ";
+      }
+      m_log << "cost: " << c << "\n";
+#endif
+      setBucketLevelFromEdges(hypergraph_list, cut, mappingVar, level);
+      assert(fatherId < m_levelInfo.size());
+      m_levelInfo[fatherId].separatorLevel = level;
+      level++;
+      m_levelInfo.push_back({level, (unsigned)cut.size()});
+    } else {
+      // special case 1.
+      if (!indices0.size() && indices1.size()) {
+        assignLevel(hypergraph_list, currentId, indices1, mappingVar, level);
+        continue;
+      }
+      // special case 2.
+      if (!indices1.size() && indices0.size()) {
+        assignLevel(hypergraph_list, currentId, indices0, mappingVar, level);
+        continue;
+      }
+    }
+    push_new_lvl(indices1, lvl.part_map, reduction_map, lvl.depth + 1,
+                 currentId, 1);
+    push_new_lvl(indices0, lvl.part_map, reduction_map, lvl.depth + 1,
+                 currentId, 0);
+  }
+}
+
+void probe(WrapperSolver &s, SpecManager &specs, ScoringMethod *score,
+           ProjVars &vars, std::vector<float> &units_cover,
+           std::vector<bool> &cut, int depth) {
+
+  if (!s.solve(vars.vars)) {
+    return;
+  }
+  std::vector<Lit> unitsLit;
+  std::vector<Var> freeVars;
+  s.whichAreUnits(vars.vars, unitsLit); // collect unit literals
+  specs.preUpdate(unitsLit);
+  for (auto i : unitsLit) {
+    units_cover[i.var()] += 1.0 / (depth + 1);
+  }
+  std::vector<ProjVars> varConnected;
+  int nbComponent =
+      specs.computeConnectedComponent(varConnected, vars.vars, freeVars);
+  varConnected.erase(
+      std::partition(varConnected.begin(), varConnected.end(),
+                     [&](const ProjVars &comp) { return comp.nbProj > 0; }),
+      varConnected.end());
+
+  std::sort(varConnected.begin(), varConnected.end(),
+            [](ProjVars &a, ProjVars &b) {
+              bool clean_a = a.vars.size() == a.nbProj;
+              bool clean_b = b.vars.size() == b.nbProj;
+              return clean_a > clean_b;
+            });
+
+  nbComponent = varConnected.size();
+  if (nbComponent) {
+    for (int cp = 0; cp < nbComponent; cp++) {
+      ProjVars &connected = varConnected[cp];
+      bool hasPriority = false;
+      for (auto v : connected.vars) {
+        if (specs.varIsAssigned(v) || !specs.isSelected(v))
+          continue;
+        if ((hasPriority = cut[v]))
+          break;
+      }
+      if (!hasPriority) {
+        continue;
+      }
+      Var v = score->selectVariable(connected.vars, specs);
+      Lit l = Lit::makeLit(v, true);
+
+      s.pushAssumption(l);
+      probe(s, specs, score, connected, units_cover, cut, depth + 1);
+      s.popAssumption();
+
+      if (s.isInAssumption(l))
+        continue;
+      else if (s.isInAssumption(~l))
+        probe(s, specs, score, connected, units_cover, cut, depth + 1);
+      else {
+        s.pushAssumption(~l);
+        probe(s, specs, score, connected, units_cover, cut, depth + 1);
+        s.popAssumption();
+      }
+    }
+    specs.postUpdate(unitsLit);
+    return;
+  } // else we have a tautology
+    //
+  specs.postUpdate(unitsLit);
+  return;
+}
+
+void PartitioningHeuristicStaticSingleProj::look_ahead(
+    std::vector<Var> &component, std::vector<Var> &equivClass,
+    std::vector<std::vector<Var>> &equivVar,
+    std::vector<unsigned> &bucketNumber) {
+  std::vector<int> partition(m_maxNbNodes, 0);
+  std::vector<Var> considered;
+  std::vector<unsigned> var2class(m_nbVar + 1, -1);
+
+  auto get_cut = [&]() {
+    std::vector<unsigned> cut;
+    for (auto &e : m_hypergraph) {
+      int p = partition[e.getId()];
+      bool in_cut = false;
+      for (auto v : e) {
+        if (p != partition[v]) {
+          in_cut = true;
+        }
+      }
+      if (in_cut) {
+        cut.push_back(e.getId());
+      }
+    }
+    for (int i = cut.size() - 1; i >= 0; i--) {
+      for (auto e : equivVar[var2class[cut[i]]]) {
+        cut.push_back(e);
+      }
+    }
+    for (int i = cut.size() - 1; i >= 0; i--) {
+      if (m_om.isSelected(cut[i])) {
+        std::swap(cut[i], cut.back());
+        cut.pop_back();
+      }
+    }
+    return cut;
+  };
+  struct EquivClass {
+    std::vector<Var> v;
+    float gain;
+  };
+  while (true) {
+    m_hypergraphExtractor->constructHyperGraph(m_om, component, equivClass,
+                                               equivVar, m_reduceFormula,
+                                               considered, m_hypergraph);
+    m_pm->computePartition(m_hypergraph, PartitionerManager::Level::QUALITY,
+                           partition, m_multi_lvl_cuts);
+    for (unsigned i = 0; i < equivVar.size(); i++) {
+      for (auto v : equivVar[i]) {
+        var2class[v] = i;
+      }
+    }
+    auto cut = get_cut();
+
+    int depth = 5;
+    if (cut.size() < depth) {
+      depth = cut.size();
+    }
+    std::vector<bool> contain(cut.size());
+    std::vector<bool> hasPriority(m_nbVar + 1, false);
+    std::vector<float> coverage(m_nbVar + 1);
+    std::vector<EquivClass> classes;
+
+    contain[0] = 1;
+    for (int i = 1; i < depth; i++) {
+      contain[i] = 1;
+      // All permutation
+      do {
+        std::fill(hasPriority.begin(), hasPriority.end(), false);
+        std::fill(coverage.begin(), coverage.end(), 0.0);
+        for (int j = 0; j < cut.size(); j++) {
+          if (contain[j]) {
+            hasPriority[cut[j]] = true;
+          }
+        }
+      } while (prev_permutation(contain.begin(), contain.end()));
+    }
+  }
+}
+
+void PartitioningHeuristicStaticSingleProj::distributePartition(
+    std::vector<std::vector<unsigned>> &hypergraph, std::vector<int> &partition,
+    std::vector<unsigned> &mappingEdge, std::vector<Var> &mappingVar,
+    std::vector<Strata> &stack, unsigned &level) {
+  std::vector<unsigned> cutSet, indicesFirst, indicesSecond;
+  hyper_util::splitWrtPartition(m_hypergraph, partition, mappingEdge, cutSet,
+                                indicesFirst, indicesSecond);
+
+  unsigned fatherId = stack.back().fatherId;
+  unsigned currentId = (cutSet.size()) ? level : fatherId;
+  stack.pop_back();
+
+  if (cutSet.size()) {
+    #if LOG
+    m_log<<"CutSet "<<level<<" : ";
+    for(auto i:cutSet){
+        
+
+
+    }
+    #endif
+    setCutSetBucketLevelFromEdges(hypergraph, partition, cutSet, mappingVar,
+                                  level);
+    assert(fatherId < m_levelInfo.size());
+    m_levelInfo[fatherId].separatorLevel = level;
+
+    level++;
+    m_levelInfo.push_back({level, (unsigned)cutSet.size()});
+  } else {
+    // special case 1.
+    if (!indicesFirst.size() && indicesSecond.size())
+      return assignLevel(hypergraph, currentId, indicesSecond, mappingVar,
+                         level);
+
+    // special case 2.
+    if (!indicesSecond.size() && indicesFirst.size())
+      return assignLevel(hypergraph, currentId, indicesFirst, mappingVar,
+                         level);
+  }
+
+  if (indicesSecond.size() > LIMIT)
+    stack.push_back({currentId, indicesSecond});
+  else
+    assignLevel(hypergraph, currentId, indicesSecond, mappingVar, level);
+
+  if (indicesFirst.size() > LIMIT)
+    stack.push_back({currentId, indicesFirst});
+  else
+    assignLevel(hypergraph, currentId, indicesFirst, mappingVar, level);
+}
+void PartitioningHeuristicStaticSingleProj::find_bad_vars(
+    std::vector<Var> &bad) {}
 void PartitioningHeuristicStaticSingleProj::computeDecomposition(
     std::vector<Var> &component, std::vector<Var> &equivClass,
     std::vector<std::vector<Var>> &equivVar,
@@ -156,7 +569,7 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
   // save the hyper graph.
   std::vector<std::vector<unsigned>> savedHyperGraph;
   std::vector<int> weight;
-  saveHyperGraph(savedHyperGraph, weight);
+  hyper_util::saveHyperGraph(savedHyperGraph, weight, m_hypergraph);
 
   // preparation.
   std::vector<int> partition(m_maxNbNodes, 0);
@@ -188,31 +601,31 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
     }
     is_proj[vec.back()] = sel;
   }
+  float imbalance = 0.5;
   while (stack.size()) {
     Strata &strata = stack.back();
     std::vector<unsigned> &current = strata.part;
-    int hasProj = 0;
-    for (auto i : current) {
-      Var v = considered[i];
-      hasProj += is_proj[v];
-      if(hasProj>3){
-          break;
-      }
-    }
-    if (hasProj<=3) {
-      setBucketLevelFromEdges(savedHyperGraph, current, considered,level);
-      stack.pop_back();
-      continue;
-    }
-    setHyperGraph(savedHyperGraph, weight, current, m_hypergraph);
+    hyper_util::setHyperGraph(savedHyperGraph, weight, current, m_hypergraph);
+    if ((m_multi_lvl_cuts > 2) && level == 1) {
+      m_pm->computePartition(m_hypergraph, Level::QUALITY, partition,
+                             m_multi_lvl_cuts);
+      handle_multicut(m_hypergraph, savedHyperGraph, partition, current,
+                      considered, stack, level);
+    } else {
 
-    m_pm->computePartition(m_hypergraph, Level::QUALITY, partition);
+      m_pm->computePartition(m_hypergraph, Level::QUALITY, partition, 2, imbalance);
 
-    // get the cut and split the current set of variables.
-    distributePartition(savedHyperGraph, partition, current, considered, stack,
-                        level);
+      // get the cut and split the current set of variables.
+      distributePartition(savedHyperGraph, partition, current, considered,
+                          stack, level);
+    }
   }
 
+#if LOG
+  if (m_log.is_open()) {
+    m_log.close();
+  }
+#endif
   // set the equivalence.
   for (auto v : component) {
     if (m_bucketNumber[v])

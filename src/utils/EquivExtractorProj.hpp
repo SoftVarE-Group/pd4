@@ -17,19 +17,14 @@
  */
 #pragma once
 #include "EquivExtractor.hpp"
+#include "src/hyperGraph/HyperGraphExtractor.hpp"
+#include "src/partitioner/PartitionerManager.hpp"
 #include "src/utils/UnionFind.hpp"
 
 namespace d4 {
 class EquivExtractorProj : public EquivExtractor {
 private:
   SpecManagerCnf *m_specs = 0;
-  UnionFind m_uf;
-  std::vector<unsigned int> m_idx_clauses;
-  std::vector<std::vector<Var>> m_bags;
-  std::vector<int> m_active_bags;
-
-  bool interCollectUnit(WrapperSolver &s, Var v, std::vector<Var> &listVarPU,
-                        std::vector<bool> &flagVar);
 
 public:
   EquivExtractorProj() = default; // empty constructor

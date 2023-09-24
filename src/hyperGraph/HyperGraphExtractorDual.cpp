@@ -31,7 +31,6 @@ namespace d4 {
 HyperGraphExtractorDual::HyperGraphExtractorDual(unsigned nbVar,
                                                  unsigned nbClause) {
   m_markedVar.resize(nbVar + 1, false);
-
   m_keepClause.resize(nbClause + 1, false);
   m_markedClauses.resize(nbClause + 1, false);
   m_sizeClause.resize(nbClause + 1, 0);
@@ -80,8 +79,6 @@ void HyperGraphExtractorDual::extractCutFromHyperGraph(
     std::vector<int> &partition, std::vector<int> &cutSet) {
   std::vector<unsigned> indices;
   clashHyperEdgeIndex(hypergraph, partition, indices);
-  for (auto &i : indices)
-    cutSet.push_back(considered[i]);
 
   if (!cutSet.size() && considered.size()) {
     // check if we only have one partition.

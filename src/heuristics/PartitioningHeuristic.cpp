@@ -24,9 +24,11 @@
 #include "cnf/PartitioningHeuristicBipartiteDualProj.hpp"
 #include "cnf/PartitioningHeuristicBipartitePrimal.hpp"
 #include "cnf/PartitioningHeuristicStaticMulti.hpp"
+#include "cnf/PartitioningHeuristicStaticMultiProj.hpp"
 #include "cnf/PartitioningHeuristicStaticSingleDual.hpp"
 #include "cnf/PartitioningHeuristicStaticSinglePrimal.hpp"
 #include "cnf/PartitioningHeuristicStaticSingleProjDual.hpp"
+#include "cnf/PartitioningHeuristicStaticSingleProjPrimal.hpp"
 #include "src/exceptions/FactoryException.hpp"
 #include "src/utils/AtMost1Extractor.hpp"
 
@@ -106,6 +108,19 @@ PartitioningHeuristic *PartitioningHeuristic::makePartitioningHeuristic(
     if (meth == "decomposition-static-proj-dual") {
       PartitioningHeuristicStaticSingleProjDual *ret =
           new PartitioningHeuristicStaticSingleProjDual(vm, ws, s, out);
+      ret->init(out);
+      return ret;
+    }
+    if (meth == "decomposition-static-proj-primal") {
+      PartitioningHeuristicStaticSingleProjPrimal *ret =
+          new PartitioningHeuristicStaticSingleProjPrimal(vm, ws, s, out);
+      ret->init(out);
+      return ret;
+    }
+
+    if (meth == "decomposition-multi-proj") {
+      PartitioningHeuristicStaticMultiProj *ret =
+          new PartitioningHeuristicStaticMultiProj(vm, ws, s, out);
       ret->init(out);
       return ret;
     }

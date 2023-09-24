@@ -34,7 +34,7 @@ protected:
   unsigned m_nbVar;
 
 public:
-  void computeEquivClass(EquivExtractor &eqManager, WrapperSolver &solver,
+  static void computeEquivClass(EquivExtractor &eqManager, WrapperSolver &solver,
                          std::vector<Var> &component,
                          std::vector<Lit> &unitEquiv,
                          std::vector<Var> &equivClass,

@@ -335,7 +335,7 @@ class BucketManagerCnfCl : public BucketManagerCnf<T> {
     // info about the variables.
     ret.nbBitEltVar = nbBitUnsigned(component.back());
     ret.nbByteStoreVar = 1 + (((ret.nbBitEltVar * component.size()) - 1) >> 3);
-    unsigned nbByteModeArray = 1 + ((component.back() - 1) >> 3);
+    unsigned nbByteModeArray = 1 + ((component.back()) >> 3);
     if (nbByteModeArray < ret.nbByteStoreVar) {
       ret.nbByteStoreVar = nbByteModeArray;
       ret.nbBitEltVar = 0;
@@ -423,7 +423,8 @@ class BucketManagerCnfCl : public BucketManagerCnf<T> {
 
     // fill the array.
     if (!info.nbBitEltVar) {
-      for (auto v : component) p[v >> 3] |= ((uint8_t)1) << (v & 7);
+      for (auto v : component) 
+          p[v >> 3] |= ((uint8_t)1) << (v & 7);
     } else {
       unsigned remaining = 8;
       for (auto v : component) {
@@ -528,7 +529,9 @@ class BucketManagerCnfCl : public BucketManagerCnf<T> {
 
     // ask for memory
     AllocSizeInfo sizeInfo = computeNeededBytes(component, m_inConstruction);
+    sizeInfo.totalByte += sizeof(DataInfo);
     char *data = this->m_bucketAllocator->getArray(sizeInfo.totalByte);
+    data += sizeof(DataInfo);
 
     // store the information about the formula.
     storeVariables(sizeInfo, data, component);

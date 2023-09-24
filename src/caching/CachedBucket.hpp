@@ -23,39 +23,35 @@
 #include "DataInfo.hpp"
 
 namespace d4 {
-template <class T>
-class CachedBucket {
- public:
+template <class T> class CachedBucket {
+public:
   char *data;
-  DataInfo header;
   T fc;
 
-  CachedBucket() {
-    data = NULL;
-    header.szData(0);
-  }
+  CachedBucket() { data = NULL; }
 
-  inline void set(char *d, DataInfo &dnew) {
-    data = d;
-    header = dnew;
-  }  // set
+  inline void set(char *d, DataInfo dnew) {
+    data = d-sizeof(DataInfo);
+    *(DataInfo *)data = dnew;
+  } // set
 
   inline void lockedBucket(T v) { fc = v; }
-
-  inline u_int64_t getInfo() { return header.info1; }
-  inline void szData(int s) { header.szData(s); }
-  inline unsigned szData()const { return header.szData(); }
-  inline unsigned nbVar() { return header.nbVar(); }
-  inline void reset() { header.reset(); }
+  inline const DataInfo &header() const { return *(DataInfo *)data; }
+  inline DataInfo &header() { return *(DataInfo *)data; }
+  inline uint64_t getInfo() { return data? header().info1:0; }
+  inline void szData(int s){  data? header().szData(s):void(); }
+  inline unsigned szData() const { return data?header().szData():0; }
+  inline unsigned nbVar() const { return data? header().nbVar():0; }
+  inline void reset() { header().reset(); }
 
   inline void display() {
-    std::cout << std::bitset<64>(header.info1) << " <<<<<<\n";
-    for (unsigned i = 0; i < header.szData(); i++)
+    std::cout << std::bitset<64>(header().info1) << " <<<<<<\n";
+    for (unsigned i = 0; i < header().szData(); i++)
       std::cout << std::bitset<8>(data[i]) << " ";
     std::cout << "\n";
   }
 
-  inline DataInfo &getDataInfo() { return header; }
-  inline bool sameHeader(CachedBucket<T> &b) { return header == b.header; }
+  inline DataInfo &getDataInfo() { return header(); }
+  inline bool sameHeader(CachedBucket<T> &b) { return header() == b.header(); }
 };
-}  // namespace d4
+} // namespace d4

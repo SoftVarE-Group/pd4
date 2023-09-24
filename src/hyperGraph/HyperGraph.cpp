@@ -47,6 +47,8 @@ HyperGraph::~HyperGraph() {
     delete[] m_hypergraph;
   if (m_cost)
     delete[] m_cost;
+  if (m_weight)
+    delete[] m_weight;
 } // destructor
 
 /**

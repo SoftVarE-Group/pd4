@@ -1,9 +1,11 @@
 #include "preprocessor/Preprocessor.h"
+#include "3rdParty/arjun-master/src/arjun.h"
 #include "TestSolver.h"
 #include "core/SolverTypes.h"
 #include "lib_sharpsat_td/subsumer.hpp"
 
 #include <unordered_map>
+#include <unordered_set>
 
 using std::swap;
 
@@ -80,7 +82,6 @@ bool Preprocessor<T_data>::Simplify(GPMC::Instance<T_data> *instance) {
 
   printCNFInfo("Init", true);
 
-
   if (ins->unsat || !SAT_FLE())
     return false;
 
@@ -99,12 +100,14 @@ bool Preprocessor<T_data>::Simplify(GPMC::Instance<T_data> *instance) {
     if (cpuTime() > config.timelim)
       break;
 
-    if (true)
+    if (config.ee)
       MergeAdjEquivs();
     if (config.ve) {
       if (ins->projected)
         VariableEliminate(false);
-      VariableEliminate(true);
+      if (config.ve_dve) {
+        VariableEliminate(true);
+      }
     }
     if (config.cs)
       Strengthen();
@@ -232,7 +235,6 @@ template <class T_data> bool Preprocessor<T_data>::MergeAdjEquivs() {
   // The equivalence check is lazy, using unit propagation not Sat solving.
 
   Identifier Id(ins->vars);
-
   {
     vector<sspp::Bitset> adjmat;
     adjmat.resize(ins->vars);
@@ -386,10 +388,8 @@ template <class T_data> bool Preprocessor<T_data>::MergeAdjEquivs() {
 
 template <class T_data> bool Preprocessor<T_data>::VariableEliminate(bool dve) {
   vector<int> vars;
-
   int origclssz = ins->clauses.size();
   int reps = dve ? config.dve_reps : config.ve_reps;
-
   int times = 0;
   while (times < reps) {
     vars.clear();
@@ -441,9 +441,10 @@ template <class T_data> bool Preprocessor<T_data>::VariableEliminate(bool dve) {
 }
 
 template <class T_data>
-inline bool Preprocessor<T_data>::isVECandidate(Graph &G, vector<int> &freq,
-                                                int i) const {
-  return (G.isSimplical(i) &&
+inline bool
+Preprocessor<T_data>::isVECandidate(Graph &G, bool def, vector<int> &freq,
+                                    std::vector<float> &cl_size, int i) const {
+  return (((!def) || G.isSimplical(i)) &&
           min(freq[toInt(mkLit(i))], freq[toInt(~mkLit(i))]) <= 4) ||
          (config.ve_more && (freq[toInt(mkLit(i))] * freq[toInt(~mkLit(i))] <=
                              freq[toInt(mkLit(i))] + freq[toInt(~mkLit(i))]));
@@ -453,31 +454,47 @@ template <class T_data> void Preprocessor<T_data>::pickVars(vector<Var> &vars) {
   vars.clear();
 
   vector<int> freq;
-  Graph G(ins->vars, ins->clauses, ins->learnts, freq);
+  vector<float> cl_size;
+  Graph G(ins->vars, ins->clauses, ins->learnts, freq, cl_size);
 
   for (int i = ins->npvars; i < ins->vars; i++) { // for only projected vars
-    if (isVECandidate(G, freq, i))
+    if (isVECandidate(G, false, freq, cl_size, i))
       vars.push_back(i);
   }
+
+  sort(vars.begin(), vars.end(), [&](int a, int b) {
+    int ca = freq[toInt(mkLit(a))] * freq[toInt(~mkLit(a))];
+    int cb = freq[toInt(mkLit(b))] * freq[toInt(~mkLit(b))];
+    if ((ca == 0) ^ (cb == 0)) {
+      return ca < cb;
+    }
+    if (G.isSimplical(a) ^ G.isSimplical(b)) {
+      return G.isSimplical(a) > G.isSimplical(b);
+    }
+    if (ca == cb) {
+      return cl_size[a] > cl_size[b];
+    }
+    return ca < cb;
+  });
 }
 
 template <class T_data>
 void Preprocessor<T_data>::pickDefVars(vector<Var> &vars) {
   vars.clear();
+#if 0
   vector<int> map(ins->vars);
   vector<int> candv;
 
   double stime = cpuTime();
-
+  vector<int> freq;
   {
-    vector<int> freq;
     Graph G(ins->vars, ins->clauses, ins->learnts, freq);
 
     int count = 0;
     for (int i = 0; i < ins->npvars; i++) {
       map[i] = i;
 
-      if (isVECandidate(G, freq, i)) {
+      if (isVECandidate(G, true, freq, i)) {
         if (ins->weighted && ins->lit_weights[toInt(mkLit(i))] !=
                                  ins->lit_weights[toInt(~mkLit(i))])
           continue;
@@ -545,6 +562,43 @@ void Preprocessor<T_data>::pickDefVars(vector<Var> &vars) {
     if (cpuTime() - stime > config.dve_timelimit)
       break;
   }
+#endif
+
+  ArjunNS::Arjun arjun;
+  arjun.new_vars(ins->vars);
+  for (auto cl : ins->clauses) {
+    std::vector<CMSat::Lit> cl_conf;
+    for (auto l : cl) {
+      cl_conf.push_back(CMSat::Lit(var(l), sign(l)));
+    }
+    arjun.add_clause(cl_conf);
+  }
+  std::vector<uint32_t> sample;
+  for (int i = 0; i < ins->npvars; i++) {
+    sample.push_back(i);
+  }
+  arjun.set_starting_sampling_set(sample);
+  std::vector<uint32_t> indpendent = arjun.get_indep_set();
+  std::unordered_set<uint32_t> set(indpendent.begin(), indpendent.end());
+
+  vector<int> freq;
+  vector<float> cl_size;
+  Graph G(ins->vars, ins->clauses, ins->learnts, freq, cl_size);
+  for (int i = 0; i < ins->npvars; i++) {
+    if (set.find(i) == set.end() && isVECandidate(G, true, freq, cl_size, i)) {
+      vars.push_back(i);
+    }
+  }
+  sort(vars.begin(), vars.end(), [&](int a, int b) {
+    int ca = freq[toInt(mkLit(a))] * freq[toInt(~mkLit(a))];
+    int cb = freq[toInt(mkLit(b))] * freq[toInt(~mkLit(b))];
+    if (ca == cb) {
+      float ca = cl_size[toInt(mkLit(a))] + cl_size[toInt(~mkLit(a))];
+      float cb = cl_size[toInt(mkLit(b))] + cl_size[toInt(~mkLit(b))];
+      return ca > cb;
+    }
+    return ca < cb;
+  });
 }
 
 template <class T_data>
@@ -558,6 +612,26 @@ int Preprocessor<T_data>::ElimVars(const vector<Var> &vars) {
     if (ins->clauses.size() > origclssz)
       break;
 
+    if (config.ve_check) {
+      int p = 0, n = 0;
+      for (int i = ins->clauses.size() - 1; i >= 0; i--) {
+        vector<Lit> &clause = ins->clauses[i];
+        for (int j = 0; j < clause.size(); j++) {
+          if (var(clause[j]) == v) {
+            bool negative = sign(clause[j]);
+            if (negative) {
+              n++;
+            } else {
+              p++;
+            }
+            break;
+          }
+        }
+      }
+      if(!(min(p,n)<=4||p*n<=n+p)){
+          break;
+      }
+    }
     vector<vector<Lit>> pos;
     vector<vector<Lit>> neg;
 

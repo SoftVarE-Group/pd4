@@ -17,9 +17,8 @@ using namespace PPMC;
 
 bool simplify(std::vector<std::vector<d4::Lit>> &clauses,
               std::vector<d4::Var>& sel,
-              std::vector<std::vector<d4::Lit>> &learnts, int &vars, int &pvars,
-              std::vector<d4::Lit> &assigns, std::vector<d4::Lit> &gmap,
-              std::vector<double> &activity) {
+              std::vector<std::vector<d4::Lit>> &learnts, int &vars, int &pvars,int &freevars,
+              std::vector<d4::Lit> &assigns, std::vector<d4::Lit> &gmap,bool equiv,bool check) {
 
   Instance<mpz_class> ins;
   ins.weighted = false;
@@ -49,6 +48,8 @@ bool simplify(std::vector<std::vector<d4::Lit>> &clauses,
   }
 
   Configuration config; 
+  config.pp.ve_dve = !equiv;
+  config.pp.ve_check = check;
   Preprocessor<mpz_class> preproc;
   preproc.setConfig(config.pp);
   preproc.Simplify(&ins);
@@ -60,8 +61,8 @@ bool simplify(std::vector<std::vector<d4::Lit>> &clauses,
             << clauses.size() << " Lerants: " << ins.learnts.size()
             << " PVars: " << ins.npvars << " before " << pvars << std::endl;
   // ins.writeVarMap(std::cout);
-  ins.printVarMapStats();
-  ins.writeVarMap(std::cout);
+  //ins.printVarMapStats();
+ //ins.writeVarMap(std::cout);
   clauses.clear();
   for (auto cl : ins.clauses) {
     clauses.push_back({});
@@ -69,6 +70,7 @@ bool simplify(std::vector<std::vector<d4::Lit>> &clauses,
     ncl.resize(cl.size());
     for (auto k = 0; k < cl.size(); k++) {
       ncl[k] = d4::Lit::makeLit(var(cl[k]) + 1, sign(cl[k]));
+      assert(ncl[k].var()>0);
     }
   }
   for (auto cl : ins.learnts) {
@@ -79,9 +81,9 @@ bool simplify(std::vector<std::vector<d4::Lit>> &clauses,
       ncl[k] = d4::Lit::makeLit(var(cl[k]) + 1, sign(cl[k]));
     }
   }
-  activity.resize(ins.vars);
   vars = ins.vars;
   pvars = ins.npvars;
+  freevars = ins.freevars;
   return true;
 }
 

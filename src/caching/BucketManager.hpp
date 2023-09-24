@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include <functional>
+#include <optional>
 #include <string.h>
 
 #include <boost/program_options.hpp>
@@ -41,16 +43,16 @@
 namespace d4 {
 namespace po = boost::program_options;
 
-template <class T>
-class BucketManager {
- protected:
+template <class T> class BucketManager {
+protected:
   BucketAllocator *m_bucketAllocator;
   CachedBucket<T> m_bucket;
 
- public:
+public:
   virtual ~BucketManager() {
-    if (m_bucketAllocator->getCleanup()) delete m_bucketAllocator;
-  }  // destructor
+    if (m_bucketAllocator->getCleanup())
+      delete m_bucketAllocator;
+  } // destructor
 
   static BucketManager<T> *makeBucketManager(po::variables_map &vm,
                                              CacheManager<T> *cache,
@@ -59,6 +61,7 @@ class BucketManager {
     std::string css = vm["cache-store-strategy"].as<std::string>();
     std::string ccr = vm["cache-clause-representation"].as<std::string>();
     std::string crs = vm["cache-reduction-strategy"].as<std::string>();
+    std::string cache_alloc = vm["cache-alloc"].as<std::string>();
 
     unsigned long sizeFirstPage =
         vm["cache-size-first-page"].as<unsigned long>();
@@ -70,22 +73,27 @@ class BucketManager {
         << " representation(" << ccr << ") "
         << " size_first_page(" << sizeFirstPage << ")"
         << " size_additional_page(" << sizeAdditionalPage << ")"
+        << " alloc(" << cache_alloc << ")"
         << "\n";
 
     ModeStore mode = ALL;
-    if (css == "not-binary") mode = NB;
-    if (css == "not-touched") mode = NT;
+    if (css == "not-binary")
+      mode = NB;
+    if (css == "not-touched")
+      mode = NT;
 
     SpecManagerCnf &scnf = dynamic_cast<SpecManagerCnf &>(s);
+    BucketAllocator *alloc = new BucketAllocator();
+    alloc->init(sizeFirstPage, sizeAdditionalPage, cache_alloc == "std");
     if (ccr == "clause")
       return new BucketManagerCnfCl<T>(scnf, cache, mode, sizeFirstPage,
-                                       sizeAdditionalPage);
+                                       sizeAdditionalPage, alloc);
     if (ccr == "sym")
       return new BucketManagerCnfSym<T>(scnf, cache, mode, sizeFirstPage,
-                                        sizeAdditionalPage);
+                                        sizeAdditionalPage, alloc);
     if (ccr == "index")
       return new BucketManagerCnfIndex<T>(scnf, cache, mode, sizeFirstPage,
-                                          sizeAdditionalPage);
+                                          sizeAdditionalPage, alloc);
     if (ccr == "combi") {
       unsigned limitNbVarSym =
           vm["cache-clause-representation-combi-limitVar-sym"].as<unsigned>();
@@ -99,19 +107,21 @@ class BucketManager {
 
       return new BucketManagerCnfCombi<T>(scnf, cache, mode, sizeFirstPage,
                                           sizeAdditionalPage, limitNbVarSym,
-                                          limitNbVarIndex);
+                                          limitNbVarIndex, alloc);
     }
 
     throw(
         FactoryException("Cannot create a BucketManager", __FILE__, __LINE__));
-  }  // makeBucketManager
+  } // makeBucketManager
 
   inline int nbOctetToEncodeInt(unsigned int v) {
     // we know that we cannot have more than 1<<32 variables
-    if (v < (1 << 8)) return 1;
-    if (v < (1 << 16)) return 2;
+    if (v < (1 << 8))
+      return 1;
+    if (v < (1 << 16))
+      return 2;
     return 4;
-  }  // nbOctetToEncodeInt
+  } // nbOctetToEncodeInt
 
   /**
      Collect the bucket associtated to the set of variable given in
@@ -122,11 +132,12 @@ class BucketManager {
   CachedBucket<T> *collectBucket(std::vector<Var> &component) {
     storeFormula(component, m_bucket);
     return &m_bucket;
-  }  // collectBuckect
+  } // collectBuckect
 
   inline unsigned long int usedMemory() {
     return m_bucketAllocator->usedMemory();
   }
+  inline size_t totalMemory() { return m_bucketAllocator->total_memory(); }
 
   inline bool getComsumedMemory() {
     return m_bucketAllocator->getComsumedMemory();
@@ -137,13 +148,17 @@ class BucketManager {
 
   inline void releaseMemory(char *m, unsigned size) {
     m_bucketAllocator->releaseMemory(m, size);
-  }  // releaseMemory
+  } // releaseMemory
+    //
+  inline char* getArray(unsigned size) {
+      return m_bucketAllocator->getArray(size);
+  } // releaseMemory
 
   inline double remainingMemory() {
     return m_bucketAllocator->remainingMemory();
-  }  // remainingMemory
+  } // remainingMemory
 
-  virtual void storeFormula(std::vector<Var> &component,
-                            CachedBucket<T> &b) = 0;
+  virtual void storeFormula(
+      std::vector<Var> &component, CachedBucket<T> &b) = 0;
 };
-}  // namespace d4
+} // namespace d4

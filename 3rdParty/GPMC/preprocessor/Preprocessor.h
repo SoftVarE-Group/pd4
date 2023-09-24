@@ -54,7 +54,9 @@ private:
 	bool MergeAdjEquivs();
 	bool VariableEliminate(bool dve);
 	void pickVars(std::vector<int>& vars);
+
 	void pickDefVars(std::vector<int>& vars);
+
 	int ElimVars(const std::vector<Glucose1::Var>& del);
 
 	void Compact(const Glucose1::vec<Glucose1::lbool>& assigns, const std::vector<Glucose1::Var>& elimvars={});
@@ -63,7 +65,7 @@ private:
 	void RewriteClauses(std::vector<std::vector<Glucose1::Lit>>& cls, const std::vector<Glucose1::Lit>& map);
 	void Subsume();
 
-	bool isVECandidate(Graph& G, std::vector<int>& freq, int i) const;
+	bool isVECandidate(Graph& G,bool simple, std::vector<int>& freq,std::vector<float>& cl_size, int i) const;
 
 	void printCNFInfo(const char* ppname = "", bool initial = false);
 

@@ -432,8 +432,9 @@ class BucketManagerCnfSym : public BucketManagerCnf<T> {
 
     // ask for memory
     unsigned szData =
-        computeNeededBytes(nbOLit, nbODistrib, nbLit, nbDiffClauseSize);
+        computeNeededBytes(nbOLit, nbODistrib, nbLit, nbDiffClauseSize)+sizeof(DataInfo);
     char *data = this->m_bucketAllocator->getArray(szData);
+    data += sizeof(DataInfo);
     void *p = data;
 
     // store the clause distribution of the size.
@@ -467,10 +468,12 @@ class BucketManagerCnfSym : public BucketManagerCnf<T> {
       default:
         throw(BucketException("Bad number of bytes", __FILE__, __LINE__));
     }
-    assert(static_cast<char *>(p) == &data[szData]);
+    assert(static_cast<char *>(p) == &data[szData-sizeof(DataInfo)]);
 
-    // put the information into the bucket
-    assert(0);
+    DataInfo di(szData, component.size(), nbODistrib, nbOLit);
+    b.set(data, di);
+
+
   }  // storeFormula
 };
 }  // namespace d4

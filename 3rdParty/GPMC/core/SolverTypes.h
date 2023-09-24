@@ -48,7 +48,7 @@ namespace Glucose1 {
 // so that they can be used as array indices.
 
 typedef int Var;
-#define var_Undef (-1)
+constexpr Var var_Undef = (-1);
 
 
 struct Lit {
@@ -89,15 +89,11 @@ const Lit lit_Error = { -1 };  // }
 //       does enough constant propagation to produce sensible code, and this appears to be somewhat
 //       fragile unfortunately.
 
-#define l_True  (Glucose1::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
-#define l_False (Glucose1::lbool((uint8_t)1))
-#define l_Undef (Glucose1::lbool((uint8_t)2))
-
 class lbool {
     uint8_t value;
 
 public:
-    explicit lbool(uint8_t v) : value(v) { }
+    constexpr explicit lbool(uint8_t v) : value(v) { }
 
     lbool()       : value(0) { }
     explicit lbool(bool x) : value(!x) { }
@@ -119,6 +115,13 @@ public:
     friend int   toInt  (lbool l);
     friend lbool toLbool(int   v);
 };
+
+constexpr Glucose1::lbool  l_True  = 
+(Glucose1::lbool((uint8_t)0)); // gcc does not do constant propagation if these are real constants.
+                               //
+constexpr auto l_False = (Glucose1::lbool((uint8_t)1));
+constexpr auto  l_Undef =  (Glucose1::lbool((uint8_t)2));
+
 inline int   toInt  (lbool l) { return l.value; }
 inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
 

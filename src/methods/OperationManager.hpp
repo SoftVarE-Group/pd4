@@ -45,7 +45,7 @@ class Operation {
   */
   static void *makeOperationManager(std::string &meth, bool isFloat,
                                     ProblemManager *problem, SpecManager *specs,
-                                    WrapperSolver *solver, std::ostream &out) {
+                                    WrapperSolver *solver, std::ostream &out,std::string file = {}) {
     out << "c [CONSTRUCTOR] Operation: "
         << "method(" << meth << ") "
         << "float(" << isFloat << ")\n";
@@ -56,6 +56,8 @@ class Operation {
       return new DecisionDNNFOperation<T, Node<T> *>(problem, specs, solver);
     if (meth == "proj-ddnnf-compiler")
       return new DecisionDNNFOperation<T, Node<T> *>(problem, specs, solver);
+    if (meth == "persistent-proj-ddnnf-compiler")
+      return new PersistentNodesOperation<T>(problem, file);
     throw(FactoryException("Cannot create a Operation", __FILE__, __LINE__));
   }  // makeOperationManager
 

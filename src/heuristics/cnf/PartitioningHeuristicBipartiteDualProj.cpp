@@ -55,8 +55,7 @@ PartitioningHeuristicBipartiteDualProj::PartitioningHeuristicBipartiteDualProj(
                                              out);
   m_hypergraph.init(m_nbVar + m_nbClause + sumSize + 1, m_nbClause + 1);
   m_hypergraphExtractor = new HyperGraphExtractorDualProj(
-      m_nbVar, m_nbClause,
-      vm["partitioning-heuristic-partitioner-np-cost"].as<int>());
+      m_nbVar, m_nbClause,(SpecManagerCnf&)om);
 
   m_staticPartitioner =
       PartitioningHeuristicStatic::makePartitioningHeuristicStatic(

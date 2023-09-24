@@ -50,10 +50,10 @@ PartitioningHeuristicStaticMultiProj::PartitioningHeuristicStaticMultiProj(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, int nbClause,
     int nbVar, int sumSize, std::ostream &out)
     : PartitioningHeuristicStatic(vm, s, om, nbClause, nbVar, sumSize, out) {
-  m_partitionStaticDual = new PartitioningHeuristicStaticSingleDual(
+  m_partitionStaticDual = new PartitioningHeuristicStaticSingleProjDual(
       vm, s, om, nbClause, nbVar, sumSize, out);
 
-  m_partitionStaticPrimal = new PartitioningHeuristicStaticSinglePrimal(
+  m_partitionStaticPrimal = new PartitioningHeuristicStaticSingleProjPrimal(
       vm, s, om, nbClause, nbVar, sumSize, out);
 
   m_partitionStaticUsed = NULL;

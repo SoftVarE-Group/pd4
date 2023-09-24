@@ -96,6 +96,7 @@ Configuration::Configuration() {
 	pp.ve_more = opt_vemore;
 	pp.dve_timelimit = opt_dvetimelim;
 	pp.cs = opt_cs;
+    pp.ve_dve = true;
 
 	td.varlim = opt_td_varlim;
 	td.denselim = opt_td_dlim;

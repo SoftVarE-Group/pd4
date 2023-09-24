@@ -65,6 +65,9 @@ class WrapperSolver : public ActivityManager, public PolarityManager {
 
   // this function returns false if the propagation gives a conflict.
   virtual bool decideAndComputeUnit(Lit l, std::vector<Lit> &units) = 0;
+  virtual bool decideAndComputeUnit(std::vector<Lit>, std::vector<Lit> &units){
+      throw std::runtime_error("Unimplemented");
+  }
 
   virtual void whichAreUnits(std::vector<Var> &component,
                              std::vector<Lit> &units) = 0;

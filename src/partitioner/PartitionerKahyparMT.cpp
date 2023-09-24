@@ -17,8 +17,12 @@
  */
 #include "PartitionerKahyparMT.hpp"
 
+#include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <libmtkahypar.h>
+#include <libmtkahypartypes.h>
+#include <limits>
 #include <vector>
 
 #include "src/exceptions/OptionException.hpp"
@@ -48,10 +52,10 @@ PartitionerKahyparMT::PartitionerKahyparMT(unsigned maxNodes, unsigned maxEdges,
 
   context = mt_kahypar_context_new();
   mt_kahypar_set_partitioning_parameters(context, 2 /* number of blocks */,
-                                         0.03 /* imbalance parameter */,
+                                         0.05 /* imbalance parameter */,
                                          CUT /* objective function */);
   mt_kahypar_set_context_parameter(context, VERBOSE, "0");
-  mt_kahypar_load_preset(context, DEFAULT);
+  mt_kahypar_load_preset(context, mt_kahypar_preset_type_t:: DEFAULT);
   mt_kahypar_set_seed(42 /* seed */);
 
 } // constructor
@@ -69,8 +73,10 @@ PartitionerKahyparMT::~PartitionerKahyparMT() {
    @param[in] hypergraph, the graph we search for a partition.
    @param[out] parition, the resulting partition (we suppose it is allocated).
  */
+
+
 void PartitionerKahyparMT::computePartition(HyperGraph &hypergraph, Level level,
-                                            std::vector<int> &partition) {
+                                            std::vector<int> &partition,int k,float imb) {
   std::vector<unsigned> elts;
 
   // graph initialization and shift the hypergraph
@@ -92,10 +98,9 @@ void PartitionerKahyparMT::computePartition(HyperGraph &hypergraph, Level level,
 
       m_pins[posPins++] = m_mapNodes[x];
     }
-
   }
 
-  if (elts.size()<=1)
+  if (elts.size() <= 1)
     return;
 
   for (auto &x : elts)
@@ -105,13 +110,19 @@ void PartitionerKahyparMT::computePartition(HyperGraph &hypergraph, Level level,
   const mt_kahypar_hypernode_id_t num_vertices = elts.size();
   const mt_kahypar_hyperedge_id_t num_hyperedges = sizeXpins;
 
-  auto hgraph =
-      mt_kahypar_create_hypergraph(DEFAULT, num_vertices, num_hyperedges,
-                                   m_xpins.get(), m_pins.get(), cost, nullptr);
+  mt_kahypar_set_partitioning_parameters(
+      context, k /* number of blocks */, imb /* imbalance parameter */,
+      CUT /* objective function */);
+  std::cout << "Part " << num_vertices << " " << num_hyperedges << std::endl;
+
+  auto hgraph = mt_kahypar_create_hypergraph(DEFAULT, num_vertices,
+                                             num_hyperedges, m_xpins.get(),
+                                             m_pins.get(), cost, nullptr);
 
   auto p = mt_kahypar_partition(hgraph, context);
 
   mt_kahypar_get_partition(p, m_partition.data());
+  std::cout << "CUT: " << mt_kahypar_cut(p) << std::endl;
 
   mt_kahypar_free_partitioned_hypergraph(p);
   mt_kahypar_free_hypergraph(hgraph);

@@ -25,15 +25,13 @@
 
 namespace d4 {
 
-template <class T>
-class BucketManagerCnf;
+template <class T> class BucketManagerCnf;
 
-template <class T>
-class BucketManagerCnfIndex : public BucketManagerCnf<T> {
- private:
+template <class T> class BucketManagerCnfIndex : public BucketManagerCnf<T> {
+private:
   std::vector<unsigned> m_idxClauses;
 
- public:
+public:
   /**
      Function called in order to initialized variables before using
 
@@ -51,12 +49,12 @@ class BucketManagerCnfIndex : public BucketManagerCnf<T> {
       : BucketManagerCnf<T>::BucketManagerCnf(occM, cache, mdStore,
                                               sizeFirstPage, sizeAdditionalPage,
                                               bucketAllocator) {
-  }  // BucketManagerCnfIndex
+  } // BucketManagerCnfIndex
 
   /**
      Destructor.
    */
-  ~BucketManagerCnfIndex() {}  // destructor
+  ~BucketManagerCnfIndex() {} // destructor
 
   /**
      Store the variables respecting the information of size concerning the type
@@ -74,7 +72,7 @@ class BucketManagerCnfIndex : public BucketManagerCnf<T> {
     }
 
     return p;
-  }  // storeVariables
+  } // storeVariables
 
   /**
      Transfer the formula store in distib in a table given in parameter.
@@ -94,45 +92,45 @@ class BucketManagerCnfIndex : public BucketManagerCnf<T> {
                             : 1;
 
     // ask for memory
-    unsigned szData = nbOVar * component.size() + nbOData * m_idxClauses.size();
+    unsigned szData = nbOVar * component.size() +
+                      nbOData * m_idxClauses.size() + sizeof(DataInfo);
     char *data = this->m_bucketAllocator->getArray(szData);
+    data += sizeof(DataInfo);
     void *p = data;
 
     // store the variables
     switch (nbOVar) {
-      case 1:
-        p = storeData<uint8_t, Var>(p, component);
-        break;
-      case 2:
-        p = storeData<uint16_t, Var>(p, component);
-        break;
-      default:
-        p = storeData<uint32_t, Var>(p, component);
-        break;
+    case 1:
+      p = storeData<uint8_t, Var>(p, component);
+      break;
+    case 2:
+      p = storeData<uint16_t, Var>(p, component);
+      break;
+    default:
+      p = storeData<uint32_t, Var>(p, component);
+      break;
     }
     assert(static_cast<char *>(p) == &data[nbOVar * component.size()]);
-    if (!m_idxClauses.size()) goto fillTheBucket;
+    if (!m_idxClauses.size())
+      goto fillTheBucket;
 
     // strore the clauses
     switch (nbOData) {
-      case 1:
-        p = storeData<uint8_t, unsigned>(p, m_idxClauses);
-        break;
-      case 2:
-        p = storeData<uint16_t, unsigned>(p, m_idxClauses);
-        break;
-      default:
-        p = storeData<uint32_t, unsigned>(p, m_idxClauses);
-        break;
+    case 1:
+      p = storeData<uint8_t, unsigned>(p, m_idxClauses);
+      break;
+    case 2:
+      p = storeData<uint16_t, unsigned>(p, m_idxClauses);
+      break;
+    default:
+      p = storeData<uint32_t, unsigned>(p, m_idxClauses);
+      break;
     }
 
   fillTheBucket:
-    assert(0);
-    // DataInfoCnf di(szData, component.size(), 0, m_idxClauses.size(), nbOVar,
-    // 1,
-    //               nbOData);
-    // assert(di.szData() == szData);
-    // b.set(data, di);
-  }  // storeFormula
+    assert(static_cast<char *>(p) == &data[szData-sizeof(DataInfo)]);
+    DataInfo di(szData, component.size(), nbOVar, nbOData);
+    b.set(data, di);
+  } // storeFormula
 };
-}  // namespace d4
+} // namespace d4

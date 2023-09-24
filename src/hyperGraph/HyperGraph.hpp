@@ -32,6 +32,7 @@ private:
   unsigned m_hypergraphCapacity;
   unsigned m_hypergraphSize;
   int *m_cost = 0;
+  int *m_weight = 0;
 
 public:
   HyperGraph();
@@ -39,6 +40,8 @@ public:
   ~HyperGraph();
 
   inline int *getCost() { return m_cost; }
+
+  inline int *getWeight() { return m_weight; }
 
   inline void incSize() { m_hypergraphSize++; }
   inline void decSize() { m_hypergraphSize--; }

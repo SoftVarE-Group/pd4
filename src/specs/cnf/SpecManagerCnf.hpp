@@ -30,9 +30,8 @@ namespace d4 {
 struct SpecClauseInfo {
   unsigned nbSat;
   unsigned nbUnsat;
-  unsigned nbUnsatProj;
   Lit watcher;
-  SpecClauseInfo() : nbSat(0), nbUnsat(0),nbUnsatProj(0), watcher(lit_Undef) { ; }
+  SpecClauseInfo() : nbSat(0), nbUnsat(0), watcher(lit_Undef) { ; }
 };
 
 struct InfoCluster {

@@ -33,9 +33,38 @@ Graph::Graph(int vars, const vector<vector<Glucose1::Lit>>& clauses, const vecto
 				freq[toInt(clause[i])]++;
 				for(int j=i+1; j<clause.size(); j++)
 					addEdge(var(clause[i]), var(clause[j]));
+
 			}
 		}
 	}
+}
+
+Graph::Graph(int vars, const vector<vector<Glucose1::Lit>>& clauses, const vector<vector<Glucose1::Lit>>& learnts, vector<int>& freq,std::vector<float>& cl_size)
+{
+	clear();
+	init(vars);
+	freq.resize(vars*2, 0);
+    cl_size.resize(vars,0);
+
+	for(const auto& cls : {clauses, learnts}) {
+		for(const auto& clause : cls) {
+			for(int i=0; i<clause.size(); i++) {
+				freq[toInt(clause[i])]++;
+				cl_size[var(clause[i])]+=clause.size();
+				for(int j=i+1; j<clause.size(); j++)
+					addEdge(var(clause[i]), var(clause[j]));
+
+			}
+		}
+	}
+    for(int i = 0;i<cl_size.size();i++){
+        int sum = freq[toInt(Glucose1::mkLit(i))]+freq[toInt(~Glucose1::mkLit(i))];
+        if(sum>0){
+            cl_size[i] /=sum;
+        }
+
+    }
+
 }
 void Graph::init(int n)
 {

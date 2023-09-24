@@ -51,9 +51,11 @@ struct ConfigPreprocessor {
 
 	// VE/DefVE
 	bool ve;
+    bool ve_dve;
 	int ve_reps;
 	int dve_reps;
 	bool ve_more;
+    bool ve_check;
 	double dve_timelimit;
 
 	// CS

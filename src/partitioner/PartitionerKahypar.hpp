@@ -42,6 +42,11 @@ class PartitionerKahypar : public PartitionerManager {
 
   ~PartitionerKahypar();
   void computePartition(HyperGraph &hypergraph, Level level,
-                        std::vector<int> &partition);
+                        std::vector<int> &partition,int k,float balance);
+
+  void computePartition(HyperGraph &hypergraph, Level level,
+                        std::vector<int> &partition){
+      computePartition(hypergraph,level,partition,2,0.25);
+  }
 };
 }  // namespace d4

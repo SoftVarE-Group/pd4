@@ -20,6 +20,8 @@ public:
 	Graph(int vars, const std::vector<std::vector<Glucose1::Lit>>& clauses);
 	Graph(int vars, const std::vector<std::vector<Glucose1::Lit>>& clauses, const std::vector<std::vector<Glucose1::Lit>>& learnts, std::vector<int>& freq);
 
+	Graph(int vars, const std::vector<std::vector<Glucose1::Lit>>& clauses, const std::vector<std::vector<Glucose1::Lit>>& learnts, std::vector<int>& freq,std::vector<float>&cl_size);
+
 	void init(int n);
 	void clear();
 
@@ -29,6 +31,18 @@ public:
 	void addEdge(int v1, int v2);
 	bool hasEdge(int v1, int v2) { return adj_mat[v1].Get(v2); }
 	const std::vector<int> Neighbors(int v) const { return adj_list[v]; }
+
+	bool isSimplical(int v,int proj) { 
+        bool clean = true;
+        for(auto v:adj_list[v]){
+            clean &= v>=proj; 
+        }
+        if(clean){
+            return true;
+        }
+
+        return isClique(adj_list[v]); 
+    }
 
 	bool isSimplical(int v) { return isClique(adj_list[v]); }
 	bool isClique(const std::vector<int>& adj);

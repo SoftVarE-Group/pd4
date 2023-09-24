@@ -330,6 +330,7 @@ Lit Solver::pickBranchLit() {
    though.
 
 */
+
 void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel) {
   int pathC = 0;
   Lit p = lit_Undef;

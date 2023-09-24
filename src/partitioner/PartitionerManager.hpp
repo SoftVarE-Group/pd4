@@ -39,5 +39,11 @@ class PartitionerManager {
 
   virtual void computePartition(HyperGraph &hypergraph, Level level,
                                 std::vector<int> &partition) = 0;
+
+  virtual void computePartition(HyperGraph &hypergraph, Level level,
+                                std::vector<int> &partition,int k,float balance=0.05){
+
+      throw std::runtime_error("multi cut unimplemented");
+  }
 };
 }  // namespace d4

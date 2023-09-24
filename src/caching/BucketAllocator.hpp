@@ -41,6 +41,7 @@ class BucketAllocator {
   bool isInit = false;
   bool cleanup = true;
   bool m_consumedMemory = false;
+  bool use_std_alloc;
 
  public:
   ~BucketAllocator() {
@@ -56,6 +57,9 @@ class BucketAllocator {
   inline bool getCleanup() { return cleanup; }
   inline bool getIsInit() { return isInit; }
   inline void setIsInit(bool v) { isInit = v; }
+  inline size_t total_memory(){
+      return m_allMemory;
+  }
 
   inline size_t usedMemory() { return m_usedMemory; }
 
@@ -64,7 +68,7 @@ class BucketAllocator {
            (double)m_allMemory;
   }  // remainingMemory
 
-  void init(size_t sizeFirstPage, size_t sizeAdditionalPage);
+  void init(size_t sizeFirstPage, size_t sizeAdditionalPage,bool use_std_alloc=false);
 
   char *getArray(unsigned size);
 

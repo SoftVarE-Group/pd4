@@ -18,7 +18,6 @@
 #include "SpecManager.hpp"
 
 #include "cnf/SpecManagerCnfDyn.hpp"
-#include "cnf/SpecManagerCnfDynProj.hpp"
 #include "src/exceptions/FactoryException.hpp"
 
 namespace d4 {
@@ -42,8 +41,6 @@ SpecManager *SpecManager::makeSpecManager(po::variables_map &vm,
   if (inType == "cnf" || inType == "dimacs") {
     if (meth == "dynamic")
       return new SpecManagerCnfDyn(p);
-    if (meth == "dynamic-proj")
-      return new SpecManagerCnfDynProj(p);
     return NULL;
   }
 

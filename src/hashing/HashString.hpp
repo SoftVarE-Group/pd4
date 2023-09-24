@@ -26,7 +26,7 @@
 namespace d4 {
 class HashString {
  public:
-  inline unsigned hash(char *key, unsigned len) {
+  inline size_t hash(char *key, unsigned len) {
     return std::_Hash_bytes(key, len, 29111983);
   }  // hash
 

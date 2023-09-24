@@ -21,19 +21,39 @@
 
 #include "PartitioningHeuristicStaticSingle.hpp"
 #include "PhaseSelectorManager.hpp"
+#include "src/heuristics/ScoringMethod.hpp"
+#include "src/solvers/WrapperSolver.hpp"
 
 namespace d4 {
 class PhaseSelectorManager;
+namespace hyper_util {
+void saveHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
+                    std::vector<int> &savedCost, HyperGraph &h);
+
+void setHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
+                   std::vector<int> &savedCost, std::vector<unsigned> &indices,
+                   HyperGraph &hypergraph);
+
+} // namespace hyper_util
 
 class PartitioningHeuristicStaticSingleProj
     : public PartitioningHeuristicStaticSingle {
 protected:
-  void saveHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
-                      std::vector<int> &savedCost);
+  int m_multi_lvl_cuts = 2;
+  ScoringMethod *m_score;
 
-  void setHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
-                     std::vector<int> &savedCost,
-                     std::vector<unsigned> &indices, HyperGraph &hypergraph);
+  void distributePartition(std::vector<std::vector<unsigned>> &hypergraph,
+                           std::vector<int> &partition,
+                           std::vector<unsigned> &mappingEdge,
+                           std::vector<Var> &mappingVar,
+                           std::vector<Strata> &stack, unsigned &level);
+
+  void handle_multicut(HyperGraph &hypergraph,
+                       std::vector<std::vector<unsigned>> &hypergraph_list,
+                       std::vector<int> &partition,
+                       std::vector<unsigned> &mappingEdge,
+                       std::vector<Var> &mappingVar, std::vector<Strata> &stack,
+                       unsigned &level);
 
 public:
   PartitioningHeuristicStaticSingleProj(po::variables_map &vm, WrapperSolver &s,
@@ -43,9 +63,14 @@ public:
                                         SpecManager &om, int nbClause,
                                         int nbVar, int sumSize,
                                         std::ostream &out);
+  void handle_multicut();
+  void look_ahead(std::vector<Var> &component, std::vector<Var> &equivClass,
+                  std::vector<std::vector<Var>> &equivVar,
+                  std::vector<unsigned> &bucketNumber);
+  void find_bad_vars(std::vector<Var> &bad);
   void computeDecomposition(std::vector<Var> &component,
                             std::vector<Var> &equivClass,
                             std::vector<std::vector<Var>> &equivVar,
-                            std::vector<unsigned> &bucketNumber);
+                            std::vector<unsigned> &bucketNumber) override;
 };
 } // namespace d4

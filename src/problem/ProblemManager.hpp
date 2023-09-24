@@ -42,6 +42,9 @@ class ProblemManager {
   virtual ~ProblemManager() { ; }
   unsigned getNbVar() { return m_nbVar; }
   void setNbVar(int n) { m_nbVar = n; }
+  virtual int freeVars(){
+      return 0; 
+  }
 
   virtual void normalize() = 0;
   virtual void normalizeInner() = 0;

@@ -27,16 +27,15 @@
 #include "src/specs/SpecManager.hpp"
 
 namespace d4 {
-template <class T, class U>
-class Operation;
+template <class T, class U> class Operation;
 template <class T, class U>
 class DecisionDNNFOperation : public Operation<T, U> {
- private:
+private:
   ProblemManager *m_problem;
   NodeManager<T> *m_nodeManager;
   WrapperSolver *m_solver;
 
- public:
+public:
   DecisionDNNFOperation() = delete;
 
   /**
@@ -49,26 +48,26 @@ class DecisionDNNFOperation : public Operation<T, U> {
                         WrapperSolver *solver)
       : m_problem(problem), m_solver(solver) {
     m_nodeManager = NodeManager<T>::makeNodeManager(specs->getNbVariable() + 1);
-  }  // constructor.
+  } // constructor.
 
   /**
      Destructor.
    */
-  ~DecisionDNNFOperation() { delete m_nodeManager; }  // destructor
+  ~DecisionDNNFOperation() { delete m_nodeManager; } // destructor
 
   /**
      Create top node and returns it.
 
      \return a top node.
    */
-  U createTop() { return m_nodeManager->makeTrueNode(); }  // createTop
+  U createTop() { return m_nodeManager->makeTrueNode(); } // createTop
 
   /**
      Create bottom node and returns it.
 
      \return a bottom node.
    */
-  U createBottom() { return m_nodeManager->makeFalseNode(); }  // createBottom
+  U createBottom() { return m_nodeManager->makeFalseNode(); } // createBottom
 
   /**
      Compute the sum of the given elements.
@@ -81,7 +80,7 @@ class DecisionDNNFOperation : public Operation<T, U> {
   U manageDeterministOr(DataBranch<U> *elts, unsigned size) {
     assert(size == 2);
     return m_nodeManager->makeBinaryDeterministicOrNode(elts[0], elts[1]);
-  }  // manageDeterministOr
+  } // manageDeterministOr
 
   /**
      Compute the product of the given elements.
@@ -93,14 +92,14 @@ class DecisionDNNFOperation : public Operation<T, U> {
    */
   U manageDecomposableAnd(U *elts, unsigned size) {
     return m_nodeManager->makeDecomposableAndNode(elts, size);
-  }  // manageDecomposableAnd
+  } // manageDecomposableAnd
 
   /**
      Manage the case where the problem is unsatisfiable.
 
      \return 0 as number of models.
    */
-  U manageBottom() { return createBottom(); }  // manageBottom
+  U manageBottom() { return createBottom(); } // manageBottom
 
   /**
      Manage the case where the problem is a tautology.
@@ -111,11 +110,12 @@ class DecisionDNNFOperation : public Operation<T, U> {
    */
   U manageTop(std::vector<Var> &component) {
     DataBranch<U> b;
-    m_solver->whichAreUnits(component, b.unitLits);  // collect unit literals
+    m_solver->whichAreUnits(component, b.unitLits); // collect unit literals
     b.d = m_nodeManager->makeTrueNode();
-    if (b.unitLits.size()) return m_nodeManager->makeUnaryNode(b);
+    if (b.unitLits.size())
+      return m_nodeManager->makeUnaryNode(b);
     return b.d;
-  }  // manageTop
+  } // manageTop
 
   /**
      Manage the case where we only have a branch in our OR gate.
@@ -126,7 +126,7 @@ class DecisionDNNFOperation : public Operation<T, U> {
    */
   U manageBranch(DataBranch<U> &e) {
     return m_nodeManager->makeUnaryNode(e);
-  }  // manageBranch
+  } // manageBranch
 
   /**
      Manage the final result compute.
@@ -140,26 +140,9 @@ class DecisionDNNFOperation : public Operation<T, U> {
     if (vm.count("dump-ddnnf")) {
       std::ofstream outFile;
       std::string fileName = vm["dump-ddnnf"].as<std::string>();
-      outFile.open(fileName); 
+      outFile.open(fileName);
       std::string meth = vm["method"].as<std::string>();
-      if(meth=="proj-ddnnf-compiler"){
-          NormMap map = {};
-          map.resize(m_problem->getNbVar()*2+1);
-          for(Var i =0;i< m_problem->getNbSelectedVar();i++){
-              Var org = m_problem->getSelectedVar()[i];
-              unsigned p_org =  Lit::makeLit(org,true).m_x;
-              unsigned n_org =  Lit::makeLit(org,false).m_x;
-              map[p_org] = Lit::makeLit(i+1,true);
-              map[n_org] = Lit::makeLit(i+1,false);
-          }
-          m_nodeManager->printNNF(result, outFile,map);
-
-      }
-      else{
-
-        m_nodeManager->printNNF(result, outFile);
-
-      }
+      m_nodeManager->printNNF(result, outFile);
       outFile.close();
     } else if (vm.count("query")) {
       std::vector<Lit> query;
@@ -173,7 +156,8 @@ class DecisionDNNFOperation : public Operation<T, U> {
       do {
         typeQuery = queryManager.next(query);
         for (auto &l : query) {
-          if ((unsigned)l.var() >= fixedValue.size()) continue;
+          if ((unsigned)l.var() >= fixedValue.size())
+            continue;
           fixedValue[l.var()] =
               (l.sign()) ? ValueVar::isFalse : ValueVar::isTrue;
         }
@@ -188,12 +172,14 @@ class DecisionDNNFOperation : public Operation<T, U> {
         }
 
         for (auto &l : query) {
-          if ((unsigned)l.var() >= fixedValue.size()) continue;
+          if ((unsigned)l.var() >= fixedValue.size())
+            continue;
           fixedValue[l.var()] = ValueVar::isNotAssigned;
         }
       } while (typeQuery != TypeQuery::QueryEnd);
     } else {
-      std::vector<ValueVar> fixedValue(m_problem->getNbVar() + 1,
+      std::vector<ValueVar> fixedValue(m_problem->getNbVar() + 1 +
+                                           m_problem->freeVars(),
                                        ValueVar::isNotAssigned);
       out << "s " << std::fixed
           << m_nodeManager->computeNbModels(result, fixedValue, *m_problem)
@@ -201,7 +187,7 @@ class DecisionDNNFOperation : public Operation<T, U> {
     }
 
     m_nodeManager->deallocate(result);
-  }  // manageResult
+  } // manageResult
 
   /**
      Compute the number of model on the dDNNF.
@@ -214,7 +200,7 @@ class DecisionDNNFOperation : public Operation<T, U> {
     std::vector<ValueVar> fixedValue(m_problem->getNbVar() + 1,
                                      ValueVar::isNotAssigned);
     return m_nodeManager->computeNbModels(root, fixedValue, *m_problem);
-  }  // count
+  } // count
 
   /**
      Compute the number of model on the dDNNF.
@@ -228,12 +214,13 @@ class DecisionDNNFOperation : public Operation<T, U> {
     std::vector<ValueVar> fixedValue(m_problem->getNbVar() + 1,
                                      ValueVar::isNotAssigned);
     for (auto &l : assum) {
-      if ((unsigned)l.var() >= fixedValue.size()) continue;
+      if ((unsigned)l.var() >= fixedValue.size())
+        continue;
       fixedValue[l.var()] = (l.sign()) ? ValueVar::isFalse : ValueVar::isTrue;
     }
 
     return m_nodeManager->computeNbModels(root, fixedValue, *m_problem);
-  }  // count
+  } // count
 };
 
-}  // namespace d4
+} // namespace d4

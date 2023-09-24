@@ -24,6 +24,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <type_traits>
 #include <vector>
 
 #include "Counter.hpp"
@@ -64,7 +65,7 @@ namespace d4 {
 namespace po = boost::program_options;
 template <class T> class Counter;
 
-template <class T, class U>
+template <class T, class U, class O>
 class ProjDpllStyleMethod : public MethodManager, public Counter<T> {
 private:
   bool optDomConst;
@@ -78,11 +79,23 @@ private:
   unsigned m_stampIdx;
   bool m_isProjectedMode;
 
+  void createOperation(po::variables_map &vm) {
+    if constexpr (std::is_same_v<O, DecisionDNNFOperation<T, U>>) {
+      m_operation =
+          new DecisionDNNFOperation<T, U>(m_problem, m_specs, m_solver);
+    }
+    if constexpr (std::is_same_v<O, PersistentNodesOperation<T>>) {
+      m_operation = new PersistentNodesOperation<T>(
+          m_problem, vm["output"].as<std::string>());
+    }
+    if constexpr (std::is_same_v<O, CountingOperation<T>>) {
+      m_operation = new CountingOperation<T>(m_problem);
+    }
+  }
+
   std::vector<unsigned> m_stampVar;
   std::vector<std::vector<Lit>> m_clauses;
 
-  std::vector<unsigned long> nbTestCacheVarSize;
-  std::vector<unsigned long> nbPosHitCacheVarSize;
 
   std::vector<bool> m_currentPrioritySet;
 
@@ -99,8 +112,11 @@ private:
   std::ostream m_out;
   bool m_panicMode;
 
-  Operation<T, U> *m_operation;
+  O *m_operation;
   std::vector<int> m_var_sign;
+  int m_freevars;
+  int64_t max_depth = 0;
+  int root_comp=-1;
 
 public:
   /**
@@ -116,6 +132,7 @@ public:
     m_out.copyfmt(out);
     m_out.clear(out.rdstate());
     m_out.basic_ios<char>::rdbuf(out.rdbuf());
+    m_freevars = initProblem->freeVars();
 
     // we create the SAT solver.
     m_solver = WrapperSolver::makeWrapperSolver(vm, m_out);
@@ -172,12 +189,7 @@ public:
     m_nbDecisionNode = m_nbSplit = m_nbCallCall = 0;
     m_stampIdx = 0;
     m_stampVar.resize(m_specs->getNbVariable() + 1, 0);
-    nbTestCacheVarSize.resize(m_specs->getNbVariable() + 1, 0);
-    nbPosHitCacheVarSize.resize(m_specs->getNbVariable() + 1, 0);
-
-    void *op = Operation<T, U>::makeOperationManager(meth, isFloat, m_problem,
-                                                     m_specs, m_solver, m_out);
-    m_operation = static_cast<Operation<T, U> *>(op);
+    createOperation(vm);
     m_out << "c\n";
     m_var_sign.resize(m_specs->getNbVariable() + 1, 0);
     m_hBackUp = ProjBackupHeuristic::make(vm, *m_specs, *m_solver, m_out);
@@ -198,38 +210,9 @@ public:
     delete m_cache;
   } // destructor
   int m_frequency = 0;
+  int m_min_depth = 100000000;
 
 private:
-  int reduceNProjVars(ProjVars &vars) {
-    if (m_frequency % 100000 != 0 )
-      return 0;
-    m_frequency++;
-    int assume_npoj = 0;
-
-    SpecManagerCnf *specs = ((SpecManagerCnf *)m_specs);
-    // specs->computeCleaness();
-    for (auto v : vars.iter_nproj()) {
-      int p = specs->getNbOccurrence(Lit::makeLit(v, true));
-      if (p == 0) {
-        m_solver->pushAssumption(Lit::makeLit(v, false));
-        assume_npoj++;
-      } else {
-        int n = specs->getNbOccurrence(Lit::makeLit(v, false));
-        if (n == 0) {
-          m_solver->pushAssumption(Lit::makeLit(v, true));
-          assume_npoj++;
-        }
-      }
-    }
-    return assume_npoj;
-  }
-  void reduceNProjVarsPost(int assume_nproj) {
-    if (assume_nproj > 0) {
-      std::cout << "Nuked " << assume_nproj << std::endl;
-    }
-    m_solver->popAssumption(assume_nproj);
-  }
-  void completeCutset(std::vector<Var> &vars) {}
   /**
      Expel from a set of variables the ones they are marked as being decidable.
 
@@ -300,8 +283,11 @@ private:
         << std::setw(WIDTH_PRINT_COLUMN_MC) << m_nbSplit << "|"
         << std::setw(WIDTH_PRINT_COLUMN_MC) << MemoryStat::memUsedPeak() << "|"
         << std::setw(WIDTH_PRINT_COLUMN_MC) << m_nbDecisionNode << "|"
-        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_callPartitioner
-        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_failed_cuts << "|\n";
+        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_callPartitioner << "|"
+        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_failed_cuts << "|"
+        << std::setw(WIDTH_PRINT_COLUMN_MC) << max_depth << "|"
+        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_min_depth <<"|\n";
+    m_min_depth = 10000000;
   } // showInter
 
   /**
@@ -333,6 +319,8 @@ private:
         << "|" << std::setw(WIDTH_PRINT_COLUMN_MC) << "#dec. Node"
         << "|" << std::setw(WIDTH_PRINT_COLUMN_MC) << "#cutter"
         << "|" << std::setw(WIDTH_PRINT_COLUMN_MC) << "#bad cuts"
+        << "|" << std::setw(WIDTH_PRINT_COLUMN_MC) << "#depth"
+        << "|" << std::setw(WIDTH_PRINT_COLUMN_MC) << "#min depth"
         << "|\n";
     separator(out);
   } // showHeader
@@ -416,14 +404,13 @@ private:
 
     return ok;
   }
-  U compute_(ProjVars &setOfVar, bool emergencyMode, std::vector<Lit> &unitsLit,
+  U compute_(ProjVars &setOfVar, std::vector<Lit> &unitsLit,
              std::vector<Var> &freeVariable, std::ostream &out) {
     showRun(out);
     m_nbCallCall++;
-    int assume_nproj = reduceNProjVars(setOfVar);
 
     if (!m_solver->solve(setOfVar.vars)) {
-      reduceNProjVarsPost(assume_nproj);
+
       return m_operation->manageBottom();
     }
 
@@ -435,24 +422,27 @@ private:
     int nbComponent = m_specs->computeConnectedComponent(
         varConnected, setOfVar.vars, freeVariable);
     expelNoDecisionVar(freeVariable);
-    varConnected.erase(
-        std::partition(varConnected.begin(), varConnected.end(),
-                       [&](const ProjVars &comp) { return comp.nbProj > 0; }),
-        varConnected.end());
-
-    std::sort(varConnected.begin(), varConnected.end(),
-              [](ProjVars &a, ProjVars &b) {
-                bool clean_a = a.vars.size() == a.nbProj;
-                bool clean_b = b.vars.size() == b.nbProj;
-                return clean_a > clean_b;
-              });
-
+    if (setOfVar.nbProj != setOfVar.vars.size()) {
+      varConnected.erase(
+          std::partition(varConnected.begin(), varConnected.end(),
+                         [&](const ProjVars &comp) { return comp.nbProj > 0; }),
+          varConnected.end());
+    }
+    /*
+        std::sort(varConnected.begin(), varConnected.end(),
+                  [](ProjVars &a, ProjVars &b) {
+                    bool clean_a = a.vars.size() == a.nbProj;
+                    bool clean_b = b.vars.size() == b.nbProj;
+                    return clean_a > clean_b;
+                  });
+    */
     nbComponent = varConnected.size();
 
     // consider each connected component.
     if (nbComponent) {
       U tab[nbComponent];
       m_nbSplit += (nbComponent > 1) ? nbComponent : 0;
+      max_depth +=  1;
       for (int cp = 0; cp < nbComponent; cp++) {
         ProjVars &connected = varConnected[cp];
         bool cacheActivated = cacheIsActivated(connected.vars);
@@ -460,30 +450,27 @@ private:
         TmpEntry<U> cb = cacheActivated ? m_cache->searchInCache(connected.vars)
                                         : NULL_CACHE_ENTRY;
 
-        if (cacheActivated)
-          nbTestCacheVarSize[connected.vars.size()]++;
         if (cacheActivated && cb.defined) {
-          nbPosHitCacheVarSize[connected.vars.size()]++;
           tab[cp] = cb.getValue();
         } else {
           // recursive call
-          tab[cp] = computeDecisionNode(connected, emergencyMode, out);
+          tab[cp] = computeDecisionNode(connected, out);
 
           if (cacheActivated)
             m_cache->addInCache(cb, tab[cp]);
         }
       }
+      max_depth -= 1;
+      m_min_depth = std::min<int>(max_depth,m_min_depth);
 
       m_specs->postUpdate(unitsLit);
       expelNoDecisionLit(unitsLit);
-      reduceNProjVarsPost(assume_nproj);
 
       return m_operation->manageDecomposableAnd(tab, nbComponent);
     } // else we have a tautology
 
     m_specs->postUpdate(unitsLit);
     expelNoDecisionLit(unitsLit);
-    reduceNProjVarsPost(assume_nproj);
 
     return m_operation->createTop();
   } // compute_
@@ -518,9 +505,7 @@ private:
 
      \return the compiled formula.
   */
-  int test = true;
-  U computeDecisionNode(ProjVars &connected, bool emergencyMode,
-                        std::ostream &out) {
+  U computeDecisionNode(ProjVars &connected, std::ostream &out) {
     std::vector<Var> cutSet;
     bool hasPriority = false, hasVariable = false;
     for (auto v : connected.vars) {
@@ -534,15 +519,6 @@ private:
 
     if (hasVariable && !hasPriority && m_hCutSet->isReady(connected.vars)) {
       m_hCutSet->computeCutSet(connected.vars, cutSet);
-      if(test){
-          std::cout<<"Cut:"<<std::endl;
-          for(auto i:cutSet){
-              std::cout<<i<<" "<<std::endl;
-          }
-          std::cout<<std::endl;
-          test = false;
-
-      }
 
       for (int i = 0; i < cutSet.size(); i++) {
         cut_valid |= m_specs->isSelected(cutSet[i]) &&
@@ -552,13 +528,6 @@ private:
       // cut_valid = cutset_ok(connected, cutSet);
       if (cut_valid) {
         setCurrentPriority(cutSet);
-
-      } else if (!emergencyMode) {
-        cutSet.clear();
-        if (m_hBackUp->computeCutSetDyn(connected, cutSet)) {
-          setCurrentPriority(cutSet);
-          emergencyMode = true;
-        }
       }
       m_callPartitioner++;
     }
@@ -589,18 +558,18 @@ private:
     assert(!m_solver->isInAssumption(l.var()));
     m_solver->pushAssumption(l);
     b[0].d =
-        compute_(connected, emergencyMode, b[0].unitLits, b[0].freeVars, out);
+        compute_(connected,  b[0].unitLits, b[0].freeVars, out);
     m_solver->popAssumption();
 
     if (m_solver->isInAssumption(l))
       b[1].d = m_operation->manageBottom();
     else if (m_solver->isInAssumption(~l))
       b[1].d =
-          compute_(connected, emergencyMode, b[1].unitLits, b[1].freeVars, out);
+          compute_(connected, b[1].unitLits, b[1].freeVars, out);
     else {
       m_solver->pushAssumption(~l);
       b[1].d =
-          compute_(connected, emergencyMode, b[1].unitLits, b[1].freeVars, out);
+          compute_(connected,  b[1].unitLits, b[1].freeVars, out);
       m_solver->popAssumption();
     }
 
@@ -620,15 +589,27 @@ private:
      DPLL style algorithm with an operation manager.
   */
   U compute(ProjVars &setOfVar, std::ostream &out, bool warmStart = true) {
+    if (setOfVar.nbProj == 0) {
+
+      DataBranch<U> b = {};
+      b.d = m_operation->createTop();
+      for (int i = m_problem->getNbVar() + 1;
+           i < m_problem->getNbVar() + 1 + m_freevars; i++) {
+        b.freeVars.push_back(i);
+      }
+      return m_operation->manageBranch(b);
+    }
     if (m_problem->isUnsat() ||
         (warmStart && !m_panicMode &&
          !m_solver->warmStart(29, 11, setOfVar.vars, m_out)))
       return m_operation->manageBottom();
 
     DataBranch<U> b;
-    auto start = std::chrono::steady_clock::now();
-    b.d = compute_(setOfVar, false, b.unitLits, b.freeVars, out);
-    std::cout << "Elapsed(ms)=" << since(start).count() << std::endl;
+    b.d = compute_(setOfVar, b.unitLits, b.freeVars, out);
+    for (int i = m_problem->getNbVar() + 1;
+         i < m_problem->getNbVar() + 1 + m_freevars; i++) {
+      b.freeVars.push_back(i);
+    }
     return m_operation->manageBranch(b);
   } // compute
 

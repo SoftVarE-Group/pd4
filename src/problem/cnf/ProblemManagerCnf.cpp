@@ -59,6 +59,9 @@ ProblemManagerCnf::ProblemManagerCnf(ProblemManager *problem) {
   m_maxVar = problem->getMaxVar();
   m_indVar = problem->getIndVar();
   m_isUnsat = false;
+  m_freevars = problem->freeVars();
+
+
 } // constructor
 
 /**
@@ -72,12 +75,13 @@ ProblemManagerCnf::ProblemManagerCnf(ProblemManager *problem) {
  */
 ProblemManagerCnf::ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
                                      std::vector<double> &weightVar,
-                                     std::vector<Var> &selected) {
+                                     std::vector<Var> &selected, int freevars) {
   m_nbVar = nbVar;
   m_weightLit = weightLit;
   m_weightVar = weightVar;
   m_selected = selected;
   m_isUnsat = false;
+  m_freevars = freevars;
 } // constructor
 
 /**
@@ -119,10 +123,9 @@ void ProblemManagerCnf::normalize() {
 }
 
 void ProblemManagerCnf::normalizeInner() {
-  for (auto& cl : m_clauses) {
-    std::sort(cl.begin(), cl.end(), [](Lit a, Lit b) {
-      return a.var() < b.var();
-    });
+  for (auto &cl : m_clauses) {
+    std::sort(cl.begin(), cl.end(),
+              [](Lit a, Lit b) { return a.var() < b.var(); });
   }
 }
 /**
@@ -189,6 +192,8 @@ ProblemManagerCnf::getConditionedFormula(std::vector<Lit> &units) {
 
    @param[out] out, the stream where the messages are redirected.
  */
+
+int ProblemManagerCnf::freeVars() { return m_freevars; }
 void ProblemManagerCnf::display(std::ostream &out) {
   out << "weight list: ";
   for (unsigned i = 1; i <= m_nbVar; i++) {

@@ -24,6 +24,7 @@
 #include "BucketManager.hpp"
 #include "CacheCleaningManager.hpp"
 #include "CacheList.hpp"
+#include "CacheListLRU.hpp"
 #include "CacheNoCollision.hpp"
 #include "CachedBucket.hpp"
 #include "TmpEntry.hpp"
@@ -40,6 +41,7 @@ template <class T> class BucketManager;
 template <class T> class CacheManager {
 public:
   bool verb;
+  bool custom_hash = false;
 
   // statistics
   unsigned long m_nbEntry = 0;
@@ -116,16 +118,24 @@ public:
       return new CacheNoCollision<T>(vm, nbVar, specs, out);
     if (method == "list")
       return new CacheList<T>(vm, nbVar, specs, out);
+    if (method == "lru")
+      return new CacheListLRU<T>(vm, nbVar, specs, out);
+    if (method == "lru-prob")
+      return new CacheListProbLRU<T>(vm, nbVar, specs, out);
 
     throw(
         FactoryException("Cannot create a ProblemManager", __FILE__, __LINE__));
   } // makeCacheManager
 
-  virtual void pushInHashTable(CachedBucket<T> &cb, unsigned int hashValue,
+  virtual void pushInHashTable(CachedBucket<T> &cb, size_t hashValue,
                                T val) = 0;
   virtual CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb,
-                                              unsigned hashValue) = 0;
+                                              size_t hashValue) = 0;
   virtual void initHashTable(unsigned maxVar) = 0;
+  virtual size_t computeHash( CachedBucket<T>& bucket){
+    return hashMethod.hash(bucket.data, bucket.szData());
+
+  }
 
   virtual unsigned
   removeEntry(std::function<bool(CachedBucket<T> &c)> test) = 0;
@@ -170,16 +180,6 @@ public:
   } // printCacheInformation
 
   /**
-   * @brief Compute the hash value of an entry.
-   *
-   * @param bucket is the entry we want to compute the hash.
-   * @return the value.
-   */
-  inline unsigned computeHash(CachedBucket<T> &bucket) {
-    return hashMethod.hash(bucket.data, bucket.szData(), bucket.getInfo());
-  } // computeHash
-
-  /**
    * @brief Add an entry in the cache structure.
    *
    * @param cb
@@ -206,7 +206,8 @@ public:
 
     CachedBucket<T> *formulaBucket =
         m_bucketManager->collectBucket(varConnected);
-    unsigned hashValue = computeHash(*formulaBucket);
+    size_t hashValue =  computeHash(*formulaBucket);
+    
 
     CachedBucket<T> *cacheBucket =
         bucketAlreadyExist(*formulaBucket, hashValue);

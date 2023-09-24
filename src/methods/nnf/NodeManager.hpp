@@ -242,10 +242,13 @@ class NodeManager {
      \return a pointer on the memory we allocate.
    */
   inline uint8_t *getMemory(unsigned nbBytes) {
+
     assert(nbBytes < PAGE_SIZE);  // we check out that the PAGE is large enough.
     if (m_posInMemoryPage + nbBytes >= PAGE_SIZE) {
       m_posInMemoryPage = 0;
+      std::cout<<"SZ "<<nbBytes<<std::endl;
       m_data = new uint8_t[PAGE_SIZE];
+      std::cout<<"ALLOC: "<<m_memoryPages.size()*PAGE_SIZE<<std::endl;
       m_memoryPages.push_back(m_data);
     }
 

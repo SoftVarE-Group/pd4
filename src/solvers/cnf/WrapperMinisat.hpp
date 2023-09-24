@@ -1,4 +1,4 @@
-/*
+/*Mini
  * d4
  * Copyright (C) 2020  Univ. Artois & CNRS
  *
@@ -48,6 +48,7 @@ void addClause(std::vector<Lit>& cl,bool learnt);
   bool varIsAssigned(Var v) override;
   bool getPolarity(Var v) override;
   bool decideAndComputeUnit(Lit l, std::vector<Lit> &units) override;
+  bool decideAndComputeUnit(std::vector<Lit>, std::vector<Lit> &units) override;
   void whichAreUnits(std::vector<Var> &component,
                      std::vector<Lit> &units) override;
   void restart() override;

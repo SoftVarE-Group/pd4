@@ -40,3 +40,4 @@ target_include_directories(gpmc PUBLIC include)
 target_include_directories(gpmc PRIVATE ${CMAKE_CURRENT_LIST_DIR} ../..)
 
 target_link_libraries(gpmc PRIVATE flowcutter z mpfr gmp gmpxx $<$<BOOL:${GPMC_STATIC_BUILD}>:-static>)
+target_link_libraries(gpmc PRIVATE arjun)

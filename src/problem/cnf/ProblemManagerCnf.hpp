@@ -28,15 +28,12 @@ protected:
   std::vector<std::vector<Lit>> m_clauses;
   std::vector<std::vector<Lit>> m_learnt;
   IDIDFunc m_projMap;
-
+  int m_freevars;
 public:
   ProblemManagerCnf();
   ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
-                    std::vector<double> &weightVar, std::vector<Var> &selected);
-
+                    std::vector<double> &weightVar, std::vector<Var> &selected,int freevars=0);
   ProblemManagerCnf(ProblemManager *problem);
-
-
   ProblemManagerCnf(std::string &nameFile, std::string &proj_vars);
   ~ProblemManagerCnf();
   void normalize() override;
@@ -52,5 +49,6 @@ public:
   void displayStat(std::ostream &out, std::string startLine) override;
   ProblemManager *getUnsatProblem() override;
   ProblemManager *getConditionedFormula(std::vector<Lit> &units) override;
+  int freeVars() override;
 };
 } // namespace d4

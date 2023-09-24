@@ -22,6 +22,40 @@
 #include "src/utils/AtMost1Extractor.hpp"
 
 namespace d4 {
+namespace hyper_util {
+
+/**
+   Split the hyper graph into two parts that are induced by the given partition.
+
+   @param[in] hypergraph, the hyper graph we search to split.
+   @param[in] partition, a partition of the nets.
+   @param[in] mappingEdge, to get the idx in the saved hyper graph.
+   @param[out] cutset, the cutset, that is the edge
+   @param[out] indicesFirst, the set of edges regarding the first partition.
+   @param[out] indicesSecond, the set of edges regarding the second partition.
+*/
+void splitWrtPartition(HyperGraph &hypergraph, std::vector<int> &partition,
+                       std::vector<unsigned> &mappingEdge,
+                       std::vector<unsigned> &cutSet,
+                       std::vector<unsigned> &indicesFirst,
+                       std::vector<unsigned> &indicesSecond) {
+  for (auto &edge : hypergraph) {
+    bool clash = false;
+    int part = partition[edge[0]];
+    for (unsigned i = 1; !clash && i < edge.getSize(); i++)
+      clash = part != partition[edge[i]];
+
+    if (clash)
+      cutSet.push_back(mappingEdge[edge.getId()]);
+    else {
+      if (part)
+        indicesFirst.push_back(mappingEdge[edge.getId()]);
+      else
+        indicesSecond.push_back(mappingEdge[edge.getId()]);
+    }
+  }
+} // splitWrtPartition
+} // namespace hyper_util
 /**
    Constructor.
 
@@ -48,7 +82,7 @@ PartitioningHeuristicStaticSingle::PartitioningHeuristicStaticSingle(
    @param[in] nbVar, the number of variables.
    @param[in] sumSize, which give the number of literals.
  */
-#define LOG true
+#define LOG 0
 PartitioningHeuristicStaticSingle::PartitioningHeuristicStaticSingle(
     po::variables_map &vm, WrapperSolver &s, SpecManager &om, int nbClause,
     int nbVar, int sumSize, std::ostream &out)
@@ -87,6 +121,19 @@ void PartitioningHeuristicStaticSingle::init(std::ostream &out) {
   std::vector<Var> component;
   for (unsigned i = 1; i <= m_nbVar; i++)
     component.push_back(i);
+  /*
+  std::vector<std::vector<int>> parts;
+  std::vector<int> free;
+  m_om.computeConnectedComponent(parts, component, free);
+  component.clear();
+  for (auto p : parts) {
+    if (p.size() > 40) {
+      for (auto v : p) {
+        component.push_back(v);
+      }
+    }
+  }
+  */
 
   // search for equiv class if requiered.
   std::vector<Lit> unitEquiv;
@@ -190,7 +237,6 @@ void PartitioningHeuristicStaticSingle::computeCutSet(
     if (m_bucketNumber[v] == minLevel)
       cutSet.push_back(v);
   }
-
   assert(cutSet.size());
 } // component
 
@@ -212,22 +258,14 @@ void PartitioningHeuristicStaticSingle::distributePartition(
     std::vector<unsigned> &mappingEdge, std::vector<Var> &mappingVar,
     std::vector<Strata> &stack, unsigned &level) {
   std::vector<unsigned> cutSet, indicesFirst, indicesSecond;
-  splitWrtPartition(m_hypergraph, partition, mappingEdge, cutSet, indicesFirst,
-                    indicesSecond);
+  hyper_util::splitWrtPartition(m_hypergraph, partition, mappingEdge, cutSet,
+                                indicesFirst, indicesSecond);
 
   unsigned fatherId = stack.back().fatherId;
   unsigned currentId = (cutSet.size()) ? level : fatherId;
   stack.pop_back();
 
   if (cutSet.size()) {
-#if LOG
-      m_log<<"Lvl: "<<level<<": ";
-    for(auto i:cutSet){
-        Var v = mappingVar[i];
-        m_log<<v<<" ";
-    }
-    m_log<<"\n";
-#endif
     setCutSetBucketLevelFromEdges(hypergraph, partition, cutSet, mappingVar,
                                   level);
     assert(fatherId < m_levelInfo.size());
@@ -280,37 +318,6 @@ void PartitioningHeuristicStaticSingle::assignLevel(
     m_levelInfo.push_back({level, (unsigned)indices.size()});
   }
 } // assignLevel
-
-/**
-   Split the hyper graph into two parts that are induced by the given partition.
-
-   @param[in] hypergraph, the hyper graph we search to split.
-   @param[in] partition, a partition of the nets.
-   @param[in] mappingEdge, to get the idx in the saved hyper graph.
-   @param[out] cutset, the cutset, that is the edge
-   @param[out] indicesFirst, the set of edges regarding the first partition.
-   @param[out] indicesSecond, the set of edges regarding the second partition.
-*/
-void PartitioningHeuristicStaticSingle::splitWrtPartition(
-    HyperGraph &hypergraph, std::vector<int> &partition,
-    std::vector<unsigned> &mappingEdge, std::vector<unsigned> &cutSet,
-    std::vector<unsigned> &indicesFirst, std::vector<unsigned> &indicesSecond) {
-  for (auto &edge : hypergraph) {
-    bool clash = false;
-    int part = partition[edge[0]];
-    for (unsigned i = 1; !clash && i < edge.getSize(); i++)
-      clash = part != partition[edge[i]];
-
-    if (clash)
-      cutSet.push_back(mappingEdge[edge.getId()]);
-    else {
-      if (part)
-        indicesFirst.push_back(mappingEdge[edge.getId()]);
-      else
-        indicesSecond.push_back(mappingEdge[edge.getId()]);
-    }
-  }
-} // splitWrtPartition
 
 /**
    Search a decomposition tree regarding a component.

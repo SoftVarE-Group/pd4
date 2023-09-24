@@ -69,7 +69,7 @@ class CacheNoCollision : public CacheManager<T> {
    * @param hashValue is the hash value of the bucket.
    * @param val is the value we associate with the bucket.
    */
-  void pushInHashTable(CachedBucket<T> &cb, unsigned int hashValue,
+  void pushInHashTable(CachedBucket<T> &cb, size_t hashValue,
                        T val) override {
     CachedBucket<T> &cbi = hashTable[hashValue % SIZE_HASH];
 
@@ -95,7 +95,7 @@ class CacheNoCollision : public CacheManager<T> {
    * otherwise
    */
   CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb,
-                                      unsigned hashValue) override {
+                                      size_t hashValue) override {
     char *refData = cb.data;
 
     CachedBucket<T> &cbi = hashTable[hashValue % SIZE_HASH];

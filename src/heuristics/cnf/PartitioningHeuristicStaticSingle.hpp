@@ -19,10 +19,9 @@
 
 #include <ostream>
 
-
-#include <fstream>
 #include "PartitioningHeuristicStatic.hpp"
 #include "PhaseSelectorManager.hpp"
+#include <fstream>
 
 namespace d4 {
 class PhaseSelectorManager;
@@ -41,18 +40,26 @@ struct DistribSize {
   }
 
   double getRatio() {
-    if (!leftTreeSize || !rightTreeSize) return 0;
+    if (!leftTreeSize || !rightTreeSize)
+      return 0;
 
     if (leftTreeSize > rightTreeSize)
       return (double)rightTreeSize / (double)leftTreeSize;
     return (double)leftTreeSize / (double)rightTreeSize;
   }
 };
+namespace hyper_util {
 
+void splitWrtPartition(
+    HyperGraph &hypergraph, std::vector<int> &partition,
+    std::vector<unsigned> &mappingEdge, std::vector<unsigned> &cutSet,
+    std::vector<unsigned> &indicesFirst,
+    std::vector<unsigned> &indicesSecond); // splitWrtPartition
+
+} // namespace hyper_util
 
 class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
-
- protected:
+protected:
   struct Strata {
     unsigned fatherId;
     std::vector<unsigned> part;
@@ -65,7 +72,7 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
 
   const unsigned LIMIT = 10;
 
-    std::ofstream m_log;
+  std::ofstream m_log;
 
   // to store the hypergraph, and then avoid reallocated memory.
   HyperGraph m_hypergraph;
@@ -77,18 +84,11 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
   std::vector<LevelInfo> m_levelInfo;
   std::vector<Var> m_equivClass;
   std::vector<unsigned> m_levelDistribution;
-
   void distributePartition(std::vector<std::vector<unsigned>> &hypergraph,
                            std::vector<int> &partition,
                            std::vector<unsigned> &mappingEdge,
                            std::vector<Var> &mappingVar,
                            std::vector<Strata> &stack, unsigned &level);
-
-  void splitWrtPartition(HyperGraph &hypergraph, std::vector<int> &partition,
-                         std::vector<unsigned> &mappingEdge,
-                         std::vector<unsigned> &cutSet,
-                         std::vector<unsigned> &indicesFirst,
-                         std::vector<unsigned> &indicesSecond);
 
   void assignLevel(std::vector<std::vector<unsigned>> &hypergraph,
                    unsigned idFather, std::vector<unsigned> &indices,
@@ -99,19 +99,27 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
   void setHyperGraph(std::vector<std::vector<unsigned>> &savedHyperGraph,
                      std::vector<unsigned> &indices, HyperGraph &hypergraph);
 
-  virtual void setBucketLevelFromEdges(
-      std::vector<std::vector<unsigned>> &hypergraph,
-      std::vector<unsigned> &indices, std::vector<int> &mapping,
-      unsigned level) {}
+  virtual void
+  setBucketLevelFromEdges(std::vector<std::vector<unsigned>> &hypergraph,
+                          std::vector<unsigned> &indices,
+                          std::vector<int> &mapping, unsigned level) {}
+
+  virtual void
+  setCutSetBucketLevelFromEdges(std::vector<std::vector<unsigned>> &hypergraph,
+                                std::vector<int> &partition,
+                                std::vector<unsigned> &indices,
+                                std::vector<int> &mapping, unsigned level) {
+    setBucketLevelFromEdges(hypergraph, indices, mapping, level);
+  }
 
   virtual void setCutSetBucketLevelFromEdges(
-      std::vector<std::vector<unsigned>> &hypergraph,
+      std::vector<std::vector<unsigned>> &hypergraph, std::vector<int> &cost,
       std::vector<int> &partition, std::vector<unsigned> &indices,
       std::vector<int> &mapping, unsigned level) {
     setBucketLevelFromEdges(hypergraph, indices, mapping, level);
   }
 
- public:
+public:
   PartitioningHeuristicStaticSingle(po::variables_map &vm, WrapperSolver &s,
                                     SpecManager &om, std::ostream &out);
 
@@ -122,9 +130,9 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
   virtual ~PartitioningHeuristicStaticSingle();
 
   virtual void computeDecomposition(std::vector<Var> &component,
-                            std::vector<Var> &equivClass,
-                            std::vector<std::vector<Var>> &equivVar,
-                            std::vector<unsigned> &bucketNumber);
+                                    std::vector<Var> &equivClass,
+                                    std::vector<std::vector<Var>> &equivVar,
+                                    std::vector<unsigned> &bucketNumber);
 
   void computeCutSet(std::vector<Var> &component, std::vector<Var> &cutSet);
 
@@ -144,4 +152,4 @@ class PartitioningHeuristicStaticSingle : public PartitioningHeuristicStatic {
     return m_levelInfo[i].cutSize;
   }
 };
-}  // namespace d4
+} // namespace d4

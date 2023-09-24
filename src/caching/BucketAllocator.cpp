@@ -27,9 +27,13 @@ namespace d4 {
    @param[in] sizeAdditionalPage, the amount of bytes for the additional pages.
 */
 void BucketAllocator::init(unsigned long sizeFirstPage,
-                           unsigned long sizeAdditionalPage) {
-  if (isInit) return;
+                           unsigned long sizeAdditionalPage,
+                           bool use_std_alloc_) {
+
+  if (isInit)
+    return;
   isInit = true;
+  use_std_alloc = use_std_alloc_;
 
   m_allMemory = m_freeMemory = m_posInData = 0;
   m_sizeFirstPage = sizeFirstPage;
@@ -38,11 +42,14 @@ void BucketAllocator::init(unsigned long sizeFirstPage,
 
   // we cannot reinit ... at least for the moment
   assert(!m_allocateData.size());
-  m_data = new char[m_sizeData];
-  m_allocateData.push_back(m_data);
-  m_allMemory += m_sizeData;
+
+  if (!use_std_alloc) {
+    m_data = new char[m_sizeData];
+    m_allocateData.push_back(m_data);
+    m_allMemory += m_sizeData;
+  }
   m_usedMemory = 0;
-}  // init
+} // init
 
 /**
    Get a pointer on an available array where we can store the data we want to
@@ -54,6 +61,9 @@ void BucketAllocator::init(unsigned long sizeFirstPage,
 */
 char *BucketAllocator::getArray(unsigned size) {
   m_usedMemory += size;
+  if (use_std_alloc) {
+    return new char[size]();
+  }
   char *ret = NULL;
 
   if (m_freeSpace.size() > size &&
@@ -84,7 +94,8 @@ char *BucketAllocator::getArray(unsigned size) {
   // take a fresh entry
   if (m_posInData + size > m_sizeData) {
     unsigned rSz = m_sizeData - m_posInData;
-    if (m_freeSpace.size() <= rSz) m_freeSpace.resize(rSz + 1);
+    if (m_freeSpace.size() <= rSz)
+      m_freeSpace.resize(rSz + 1);
     m_freeSpace[rSz].push_back(&m_data[m_posInData]);
     m_freeMemory += rSz;
 
@@ -102,7 +113,7 @@ char *BucketAllocator::getArray(unsigned size) {
   ret = &m_data[m_posInData];
   m_posInData += size;
   return ret;
-}  // getArray
+} // getArray
 
 /**
    Release some memory of a given size and store this information in
@@ -112,15 +123,23 @@ char *BucketAllocator::getArray(unsigned size) {
    @param[in] size, the size of the memory block
 */
 void BucketAllocator::releaseMemory(char *m, unsigned size) {
+  if (m == nullptr) {
+    return;
+  }
   m_usedMemory -= size;
+  if (use_std_alloc) {
+    delete[] m;
+    return;
+  }
 
   if ((m_posInData - size) > 0 && &m_data[m_posInData - size] == m)
     m_posInData -= size;
   else {
-    if (size >= m_freeSpace.size()) m_freeSpace.resize(size + 1);
+    if (size >= m_freeSpace.size())
+      m_freeSpace.resize(size + 1);
     m_freeSpace[size].push_back(m);
     m_freeMemory += size;
   }
-}  // reverseLastBucket
+} // reverseLastBucket
 
-}  // namespace d4
+} // namespace d4
