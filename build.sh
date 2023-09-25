@@ -57,14 +57,23 @@ then
 fi
 
 
-if ! [ -f ./3rdParty/louvain-community/build/lib/libarjun.so  ]
+if ! [ -f ./3rdParty/cryptominisat/build/lib/libcrytominisat5.so]
+then
+    cd $curRep
+    cd 3rdParty/cryptominisat
+    mkdir -p build
+    cd build
+    cmake -DCMAKE_CXX_FLAGS="-include cstdint"  .. 
+    make -j12
+fi
+if ! [ -f ./3rdParty/louvain-community/build/lib/liblouvain_communities.so  ]
 then
     cd $curRep
     cd 3rdParty/louvain-community
     mkdir -p build
     cd build
     cmake -DCMAKE_CXX_FLAGS="-include cstdint"  .. 
-    make -j4
+    make -j12
 fi
 if ! [ -f ./3rdParty/arjun/build/lib/libarjun.so  ]
 then
@@ -72,8 +81,8 @@ then
     cd 3rdParty/arjun
     mkdir -p build
     cd build
-    cmake -DCMAKE_PREFIX_PATH=../../louvain-community/build  .. 
-    make -j4
+    cmake -DCMAKE_PREFIX_PATH="../../louvain-community/build;../../cryptominisat/build"  ..
+    make -j12
 fi
 
 if ! [ -f 3rdParty/mt-kahypar/build/lib/libmtkahypar.so ]

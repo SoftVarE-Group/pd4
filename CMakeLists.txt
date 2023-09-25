@@ -25,10 +25,11 @@ set(HEADERS ${INCLUDES})
 
 set(Boost_USE_STATIC_LIBS ON)
 link_directories(${CMAKE_SOURCE_DIR}/3rdParty/arjun/build/lib)
-
 add_subdirectory(3rdParty/GPMC)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}/3rdParty)
 
+
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/cryptominisat/build/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/arjun/build/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
@@ -91,6 +92,7 @@ else()
     target_compile_options(d4 PUBLIC -Wall -std=c++20 -Wno-class-memaccess -march=native -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses -march=native)
     target_link_libraries(d4 gpmc)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/arjun/build/lib/libarjun.so)
+    target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/cryptominisat/build/lib/libcryptominisat5.so)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so )
     target_link_libraries (d4 -lz -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} 
         ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a 

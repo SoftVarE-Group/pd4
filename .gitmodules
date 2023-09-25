@@ -7,3 +7,6 @@
 [submodule "3rdParty/mt-kahypar"]
 	path = 3rdParty/mt-kahypar
 	url = https://github.com/kahypar/mt-kahypar.git
+[submodule "3rdParty/cryptominisat"]
+	path = 3rdParty/cryptominisat
+	url = https://github.com/msoos/cryptominisat
