@@ -1,0 +1,9 @@
+[submodule "3rdParty/arjun"]
+	path = 3rdParty/arjun
+	url = https://github.com/meelgroup/arjun.git
+[submodule "3rdParty/louvain-community"]
+	path = 3rdParty/louvain-community
+	url = https://github.com/meelgroup/louvain-community
+[submodule "3rdParty/mt-kahypar"]
+	path = 3rdParty/mt-kahypar
+	url = https://github.com/kahypar/mt-kahypar.git

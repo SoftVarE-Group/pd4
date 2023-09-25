@@ -1,5 +1,5 @@
 #include "preprocessor/Preprocessor.h"
-#include "3rdParty/arjun-master/src/arjun.h"
+#include "3rdParty/arjun/src/arjun.h"
 #include "TestSolver.h"
 #include "core/SolverTypes.h"
 #include "lib_sharpsat_td/subsumer.hpp"

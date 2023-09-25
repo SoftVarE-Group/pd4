@@ -1,6 +1,5 @@
 
 #include "PreprocGPMC.hpp"
-#include "3rdParty/arjun-master/src/arjun.h"
 #include "gpmc.hpp"
 #include "src/heuristics/cnf/PartitioningHeuristicStaticSingleProjDual.hpp"
 #include "src/hyperGraph/HyperGraphExtractorDualProj.hpp"
@@ -58,7 +57,6 @@ ProblemManager *PreprocGPMC::run(ProblemManager *pin,
     out->getClauses() = std::move(clauses);
     return out;
   };
-  CMSat::SATSolver solver;
   if (!GPMC::simplify(clauses, pin->getSelectedVar(), lastBreath.learnt, vars,
                       pvars, freevars, asignes, gmap, equiv,ve_check)) {
     return pin->getUnsatProblem();

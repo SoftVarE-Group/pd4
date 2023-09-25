@@ -56,6 +56,26 @@ then
     make -j
 fi
 
+
+if ! [ -f ./3rdParty/louvain-community/build/lib/libarjun.so  ]
+then
+    cd $curRep
+    cd 3rdParty/louvain-community
+    mkdir -p build
+    cd build
+    cmake -DCMAKE_CXX_FLAGS="-include cstdint"  .. 
+    make -j4
+fi
+if ! [ -f ./3rdParty/arjun/build/lib/libarjun.so  ]
+then
+    cd $curRep
+    cd 3rdParty/arjun
+    mkdir -p build
+    cd build
+    cmake -DCMAKE_PREFIX_PATH=../../louvain-community/build  .. 
+    make -j4
+fi
+
 if ! [ -f 3rdParty/mt-kahypar/build/lib/libmtkahypar.so ]
 then
     cd $curRep
