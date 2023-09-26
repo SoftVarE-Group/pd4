@@ -94,6 +94,7 @@ else()
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/arjun/build/lib/libarjun.so)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/cryptominisat/build/lib/libcryptominisat5.so)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so )
+
     target_link_libraries (d4 -lz -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} 
         ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a 
         ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
