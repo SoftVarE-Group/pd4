@@ -55,7 +55,7 @@ then
     cd 3rdParty/kahypar/
     mkdir -p build
     cd build
-    cmake .. -DCMAKE_BUILD_TYPE=RELEASE
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_USE_MINIMAL_BOOS=ON
     make -j
 fi
 
@@ -68,7 +68,7 @@ then
     cd 3rdParty/cryptominisat
     mkdir -p build
     cd build
-    cmake -DCMAKE_CXX_FLAGS="-include cstdint"  .. 
+    cmake -DCMAKE_CXX_FLAGS="-include cstdint" -DCMAKE_BUILD_TYPE=Release  .. 
     make -j12
 fi
 
@@ -79,7 +79,7 @@ then
     cd 3rdParty/louvain-community
     mkdir -p build
     cd build
-    cmake -DCMAKE_CXX_FLAGS="-include cstdint"  .. 
+    cmake -DCMAKE_CXX_FLAGS="-include cstdint" -DCMAKE_BUILD_TYPE=Release  .. 
     make -j12
 fi
 
@@ -90,7 +90,7 @@ then
     cd 3rdParty/arjun
     mkdir -p build
     cd build
-    cmake -DCMAKE_PREFIX_PATH="../../louvain-community/build;../../cryptominisat/build"  ..
+    cmake -DCMAKE_PREFIX_PATH="../../louvain-community/build;../../cryptominisat/build"  -DCMAKE_BUILD_TYPE=Release..
     make -j12
 fi
 
