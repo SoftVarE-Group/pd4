@@ -55,7 +55,7 @@ then
     cd 3rdParty/kahypar/
     mkdir -p build
     cd build
-    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_USE_MINIMAL_BOOS=ON
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_USE_MINIMAL_BOOST=ON
     make -j
 fi
 
