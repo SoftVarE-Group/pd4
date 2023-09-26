@@ -90,7 +90,7 @@ then
     cd 3rdParty/arjun
     mkdir -p build
     cd build
-    cmake -DCMAKE_PREFIX_PATH="../../louvain-community/build;../../cryptominisat/build"  -DCMAKE_BUILD_TYPE=Release..
+    cmake -DCMAKE_PREFIX_PATH="../../louvain-community/build;../../cryptominisat/build"  -DCMAKE_BUILD_TYPE=Release ..
     make -j12
 fi
 
