@@ -102,8 +102,8 @@ then
     cd 3rdParty/mt-kahypar
     mkdir -p build
     cd build
-    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_DOWNLOAD_TBB=On
-    cmake --build . --target mtkahypar
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_DOWNLOAD_TBB=On -G Ninja
+    cmake --build . --target mtkahypar 
 fi
 
 cd $curRep
