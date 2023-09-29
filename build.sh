@@ -102,7 +102,7 @@ then
     cd 3rdParty/mt-kahypar
     mkdir -p build
     cd build
-    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_DOWNLOAD_TBB=On -DKAHYPAR_DOWNLOAD_BOOST=On
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE  -DKAHYPAR_DOWNLOAD_TBB=On
     cmake --build . --target mtkahypar
 fi
 
