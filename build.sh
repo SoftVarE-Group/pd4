@@ -62,7 +62,7 @@ fi
 
 
 echo building cryptominisat
-if ! [ -f ./3rdParty/cryptominisat/build/lib/libcrytominisat5.so]
+if ! [ -f ./3rdParty/cryptominisat/build/lib/libcrytominisat5.so ]
 then
     cd $curRep
     cd 3rdParty/cryptominisat
