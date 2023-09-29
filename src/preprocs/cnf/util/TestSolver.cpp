@@ -2,9 +2,10 @@
 #include "TestSolver.hpp"
 #include <iostream>
 
+namespace PRE{
 using namespace std;
 using namespace Glucose;
-using namespace d4;
+
 
 void Identifier::identify(Lit l1, Lit l2) {
   if (cidx[toInt(l1)] == -1 && cidx[toInt(l2)] == -1) {
@@ -292,4 +293,113 @@ void TestSolver::resetClauses(vector<vector<Lit>>& cls)
 		addClause_(tmp);
 	}
 }
+// Graph
+Graph::Graph(int vars, const vector<vector<Glucose::Lit>>& clauses)
+{
+	clear();
+	init(vars);
+	for(const auto& clause : clauses)
+		for(int i=0; i<clause.size(); i++)
+			for(int j=i+1; j<clause.size(); j++)
+				addEdge(var(clause[i]), var(clause[j]));
+}
+Graph::Graph(int vars, const vector<vector<Glucose::Lit>>& clauses, const vector<vector<Glucose::Lit>>& learnts, vector<int>& freq)
+{
+	clear();
+	init(vars);
+	freq.resize(vars*2, 0);
 
+	for(const auto& cls : {clauses, learnts}) {
+		for(const auto& clause : cls) {
+			for(int i=0; i<clause.size(); i++) {
+				freq[toInt(clause[i])]++;
+				for(int j=i+1; j<clause.size(); j++)
+					addEdge(var(clause[i]), var(clause[j]));
+
+			}
+		}
+	}
+}
+
+Graph::Graph(int vars, const vector<vector<Glucose::Lit>>& clauses, const vector<vector<Glucose::Lit>>& learnts, vector<int>& freq,std::vector<float>& cl_size)
+{
+	clear();
+	init(vars);
+	freq.resize(vars*2, 0);
+    cl_size.resize(vars,0);
+
+	for(const auto& cls : {clauses, learnts}) {
+		for(const auto& clause : cls) {
+			for(int i=0; i<clause.size(); i++) {
+				freq[toInt(clause[i])]++;
+				cl_size[var(clause[i])]+=clause.size();
+				for(int j=i+1; j<clause.size(); j++)
+					addEdge(var(clause[i]), var(clause[j]));
+
+			}
+		}
+	}
+    for(int i = 0;i<cl_size.size();i++){
+        int sum = freq[toInt(Glucose::mkLit(i))]+freq[toInt(~Glucose::mkLit(i))];
+        if(sum>0){
+            cl_size[i] /=sum;
+        }
+
+    }
+
+}
+void Graph::init(int n)
+{
+	nodes = n;
+
+	adj_list.clear();
+	adj_list.resize(nodes, {});
+
+	adj_mat.clear();
+	adj_mat.resize(n);
+	for(int i=0; i<n; i++) {
+		adj_mat[i] = sspp::Bitset(n);
+		adj_mat[i].SetFalse(i);
+	}
+}
+void Graph::clear()
+{
+	nodes = 0;
+	edges = 0;
+	adj_list.clear();
+	adj_mat.clear();
+}
+void Graph::addEdge(int v1, int v2)
+{
+	if(adj_mat[v1].Get(v2))
+		return;
+
+	adj_list[v1].push_back(v2);
+	adj_list[v2].push_back(v1);
+	adj_mat[v1].SetTrue(v2);
+	adj_mat[v2].SetTrue(v1);
+	edges++;
+}
+bool Graph::isClique(const vector<int>& adj)
+{
+	for(int i=0; i<adj.size(); i++)
+		for(int j=i+1; j<adj.size(); j++)
+			if(!hasEdge(adj[i], adj[j])) return false;
+
+	return true;
+}
+
+void Graph::toDimacs(ostream& out, bool withHeader)
+{
+	if(withHeader)
+		out << "p tw "<< nodes << " " << edges << endl;
+
+	for(int i=0; i<nodes; i++) {
+		for(auto j : adj_list[i]) {
+			if(i>=j) continue;
+			out << (i+1) << " " << (j+1) << endl;
+		}
+	}
+}
+
+}

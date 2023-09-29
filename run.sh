@@ -4,13 +4,17 @@ ninja
     --partitioning-heuristic-partitioner kahypar   \
     --partitioning-heuristic-simplification-equivalence true \
     --partitioning-heuristic-partitioner-np-cost 100 \
-    -i ~/projects/projected-ddnnf-compilation-eval/instances/fm-hard/automotive02.automotive2_4/28.dimacs\
-    -p gpmc \
+    -i ~/projects/projected-ddnnf-compilation-eval/instances/fm-hard/automotive01.automotive01/17.dimacs\
+    -p proj \
+    --proj-backup none \
     --crs none \
-    --cache-method lru\
-    --proj-backup none\
-    --preproc-equiv true\
+    --cache-alloc std\
+    --cache-method lru-prob\
+    --preproc-equiv true \
     --preproc-ve-check true\
+    --preproc-ve-only-simpical false\
+    --preproc-ve-prefer-simpical true\
+    --preproc-ve-limit 4
 
 
 
