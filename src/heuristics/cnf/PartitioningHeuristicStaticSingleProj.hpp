@@ -41,12 +41,13 @@ class PartitioningHeuristicStaticSingleProj
 protected:
   int m_multi_lvl_cuts = 2;
   ScoringMethod *m_score;
+  float m_max_cut_ratio = 0.1;
 
-  void distributePartition(std::vector<std::vector<unsigned>> &hypergraph,
+  int distributePartition(std::vector<std::vector<unsigned>> &hypergraph,
                            std::vector<int> &partition,
                            std::vector<unsigned> &mappingEdge,
                            std::vector<Var> &mappingVar,
-                           std::vector<Strata> &stack, unsigned &level);
+                           std::vector<Strata> &stack, unsigned &level,std::vector<bool>& is_proj);
 
   void handle_multicut(HyperGraph &hypergraph,
                        std::vector<std::vector<unsigned>> &hypergraph_list,

@@ -5,6 +5,7 @@
 #include "lib_sharpsat_td/utils.hpp"
 #include "TestSolver.hpp"
 #include <vector>
+//largly based on gpmc  https://git.trs.css.i.nagoya-u.ac.jp/k-hasimt/GPMC
 namespace PRE {
 
 struct ConfigPreprocessor {

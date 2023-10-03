@@ -63,7 +63,7 @@ class CacheList : public CacheManager<T> {
    * @param hashValue is the hash value of the bucket.
    * @param val is the value we associate with the bucket.
    */
-  inline void pushInHashTable(CachedBucket<T> &cb, size_t hashValue,
+  inline void pushInHashTable(CachedBucket<T> &cb, unsigned hashValue,
                               T val) {
     hashTable[hashValue % SIZE_HASH].push_back(cb);
 
@@ -83,7 +83,7 @@ class CacheList : public CacheManager<T> {
    * @param hashValue is the hash value computed from the bucket.
    * @return a valid entry if it is in the cache, null otherwise.
    */
-  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb, size_t hashValue) {
+  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb, unsigned hashValue) {
     char *refData = cb.data;
     std::vector<CachedBucket<T>> &listCollision =
         hashTable[hashValue % SIZE_HASH];

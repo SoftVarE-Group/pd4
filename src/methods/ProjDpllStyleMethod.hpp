@@ -46,7 +46,7 @@
 #include "src/utils/Proj.hpp"
 
 #define NB_SEP_MC 104
-#define MASK_SHOWRUN_MC ((2 << 13) - 1)
+#define MASK_SHOWRUN_MC 1048575
 #define WIDTH_PRINT_COLUMN_MC 12
 #define MASK_HEADER 1048575
 
@@ -77,6 +77,7 @@ private:
   unsigned m_nbDecisionNode;
   unsigned m_optCached;
   unsigned m_stampIdx;
+  unsigned m_decay_frequency;
   bool m_isProjectedMode;
 
   void createOperation(po::variables_map &vm) {
@@ -96,7 +97,6 @@ private:
   std::vector<unsigned> m_stampVar;
   std::vector<std::vector<Lit>> m_clauses;
 
-
   std::vector<bool> m_currentPrioritySet;
 
   ProblemManager *m_problem;
@@ -105,7 +105,6 @@ private:
   ScoringMethod *m_hVar;
   PhaseHeuristic *m_hPhase;
   PartitioningHeuristic *m_hCutSet;
-  std::unique_ptr<ProjBackupHeuristic> m_hBackUp;
 
   TmpEntry<U> NULL_CACHE_ENTRY;
   CacheManager<U> *m_cache;
@@ -116,7 +115,7 @@ private:
   std::vector<int> m_var_sign;
   int m_freevars;
   int64_t max_depth = 0;
-  int root_comp=-1;
+  int root_comp = -1;
 
 public:
   /**
@@ -143,6 +142,7 @@ public:
     m_solver->setCountConflict(lastBreath.countConflict, 1,
                                m_problem->getNbVar());
     m_solver->setNeedModel(true);
+    m_decay_frequency = vm["scoring-method-decay-freq"].as<unsigned>();
 
     // we initialize the object that will give info about the problem.
     m_specs = SpecManager::makeSpecManager(vm, *m_problem, m_out);
@@ -168,9 +168,9 @@ public:
     */
 
     m_currentPrioritySet.resize(m_problem->getNbVar() + 1, false);
-    if ((double)m_specs->nbSelected() / (double)m_specs->getNbVariable() <
-            0.10 &&
-        (m_specs->getNbVariable() > 1000)) {
+    double projected_ratio =  double(m_specs->nbSelected()) / double(m_specs->getNbVariable());
+    double clause_var_ratio =  double(m_specs->nbSelected())/((SpecManagerCnf*)m_specs)->getNbClause();
+    if (projected_ratio<0.10| clause_var_ratio>0.5 ) {
       m_hCutSet = PartitioningHeuristic::makePartitioningHeuristicNone(m_out);
     } else {
       m_hCutSet = PartitioningHeuristic::makePartitioningHeuristic(
@@ -192,7 +192,6 @@ public:
     createOperation(vm);
     m_out << "c\n";
     m_var_sign.resize(m_specs->getNbVariable() + 1, 0);
-    m_hBackUp = ProjBackupHeuristic::make(vm, *m_specs, *m_solver, m_out);
 
   } // constructor
 
@@ -286,7 +285,7 @@ private:
         << std::setw(WIDTH_PRINT_COLUMN_MC) << m_callPartitioner << "|"
         << std::setw(WIDTH_PRINT_COLUMN_MC) << m_failed_cuts << "|"
         << std::setw(WIDTH_PRINT_COLUMN_MC) << max_depth << "|"
-        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_min_depth <<"|\n";
+        << std::setw(WIDTH_PRINT_COLUMN_MC) << m_min_depth << "|\n";
     m_min_depth = 10000000;
   } // showInter
 
@@ -442,7 +441,7 @@ private:
     if (nbComponent) {
       U tab[nbComponent];
       m_nbSplit += (nbComponent > 1) ? nbComponent : 0;
-      max_depth +=  1;
+      max_depth += 1;
       for (int cp = 0; cp < nbComponent; cp++) {
         ProjVars &connected = varConnected[cp];
         bool cacheActivated = cacheIsActivated(connected.vars);
@@ -461,7 +460,7 @@ private:
         }
       }
       max_depth -= 1;
-      m_min_depth = std::min<int>(max_depth,m_min_depth);
+      m_min_depth = std::min<int>(max_depth, m_min_depth);
 
       m_specs->postUpdate(unitsLit);
       expelNoDecisionLit(unitsLit);
@@ -535,11 +534,14 @@ private:
     // search the next variable to branch on
     Var v;
     if (cut_valid || hasPriority) {
-      v = m_hVar->selectVariable(connected.vars, *m_specs,
-                                 m_currentPrioritySet);
+      v = m_hVar->selectVariable(connected.vars, [&](Var v) {
+        return m_currentPrioritySet[v] && !m_specs->varIsAssigned(v);
+      });
     } else {
       m_failed_cuts += 1;
-      v = m_hVar->selectVariable(connected.vars, *m_specs);
+      v = m_hVar->selectVariable(connected.vars, [&](Var v) {
+        return m_specs->isSelected(v) && !m_specs->varIsAssigned(v);
+      });
     }
 
     if (v == var_Undef) {
@@ -551,25 +553,25 @@ private:
 
     Lit l = Lit::makeLit(v, m_hPhase->selectPhase(v));
     m_nbDecisionNode++;
+    if (m_nbDecisionNode % m_decay_frequency == 0) {
+      m_hVar->decay();
+    }
 
     // compile the formula where l is assigned to true
     DataBranch<U> b[2];
 
     assert(!m_solver->isInAssumption(l.var()));
     m_solver->pushAssumption(l);
-    b[0].d =
-        compute_(connected,  b[0].unitLits, b[0].freeVars, out);
+    b[0].d = compute_(connected, b[0].unitLits, b[0].freeVars, out);
     m_solver->popAssumption();
 
     if (m_solver->isInAssumption(l))
       b[1].d = m_operation->manageBottom();
     else if (m_solver->isInAssumption(~l))
-      b[1].d =
-          compute_(connected, b[1].unitLits, b[1].freeVars, out);
+      b[1].d = compute_(connected, b[1].unitLits, b[1].freeVars, out);
     else {
       m_solver->pushAssumption(~l);
-      b[1].d =
-          compute_(connected,  b[1].unitLits, b[1].freeVars, out);
+      b[1].d = compute_(connected, b[1].unitLits, b[1].freeVars, out);
       m_solver->popAssumption();
     }
 

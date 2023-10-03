@@ -21,6 +21,7 @@
 #include "cnf/ScoringMethodJwts.hpp"
 #include "cnf/ScoringMethodMom.hpp"
 #include "cnf/ScoringMethodPVsads.hpp"
+#include "cnf/ScoringMethodVsads2.hpp"
 #include "cnf/ScoringMethodVsads.hpp"
 #include "cnf/ScoringMethodVsids.hpp"
 #include "src/exceptions/FactoryException.hpp"
@@ -41,10 +42,6 @@ ScoringMethod *ScoringMethod::makeScoringMethod(po::variables_map &vm,
                                                 std::ostream &out) {
   std::string inType = vm["input-type"].as<std::string>();
   std::string meth = vm["scoring-method"].as<std::string>();
-  int x = vm["scoring-method-x"].as<int>();
-  int y = vm["scoring-method-y"].as<int>();
-  int z = vm["scoring-method-z"].as<int>();
-
   out << "c [CONSTRUCTOR] Variable heuristic: " << meth << "\n";
 
   if (inType == "cnf" || inType == "dimacs") {
@@ -58,8 +55,8 @@ ScoringMethod *ScoringMethod::makeScoringMethod(po::variables_map &vm,
         return new ScoringMethodVsids(am);
       if (meth == "vsads")
         return new ScoringMethodVsads(ps, am);
-      if (meth == "pvsads")
-        return new ScoringMethodPVsads(ps, am, x, y, z);
+      if (meth == "vsads2")
+        return new ScoringMethodVsads2(ps, am);
       if (meth == "jwts")
         return new ScoringMethodJwts(ps);
       return NULL;
@@ -117,8 +114,23 @@ Var ScoringMethod::selectVariable(std::vector<Var> &vars, SpecManager &s) {
       bestScore = current;
     }
   }
-
   return ret;
 } // selectVariable
+Var ScoringMethod:: selectVariable(std::vector<Var> &vars,std::function<bool(Var)> can_select){
+  Var ret = var_Undef;
+  double bestScore = -1;
+
+  for (auto &v : vars) {
+    if(!can_select(v))
+      continue;
+    double current = computeScore(v);
+    if (ret == var_Undef || current > bestScore) {
+      ret = v;
+      bestScore = current;
+    }
+  }
+  return ret;
+
+}
 
 } // namespace d4

@@ -441,6 +441,12 @@ void WrapperGlucose::exportLearnt(std::vector<std::vector<Lit>>& ilearnts){
 		}
 	}
 }
+void WrapperGlucose::decay(){
+  for (int i = 0; i < s.activity.size(); i++) {
+    s.activity[i] = s.activity[i] * 0.5;
+  }
+
+}
 
 
 }  // namespace d4

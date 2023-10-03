@@ -445,4 +445,11 @@ void WrapperMinisat::popAssumption(unsigned count) {
 } // popAssumption
 
 inline unsigned WrapperMinisat::getNbConflict() { return s.conflicts; }
+
+void WrapperMinisat::decay() {
+  for (int i = 0; i < s.activity.size(); i++) {
+    s.activity[i] = s.activity[i] * 0.5;
+  }
+}
+
 } // namespace d4

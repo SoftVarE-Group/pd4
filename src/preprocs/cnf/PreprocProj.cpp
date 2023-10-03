@@ -33,6 +33,13 @@ PreprocProj::~PreprocProj() { delete ws; } // destructor
 
 ProblemManager *PreprocProj::run(ProblemManager *pin,
                                  LastBreathPreproc &lastBreath) {
+
+  //TODO remove, only for testing
+  if (pin->getSelectedVar().empty()) {
+    for (int i = 1; i <= pin->getNbVar(); i++) {
+      pin->getSelectedVar().push_back(i);
+    }
+  }
   ProblemManagerCnf *in = (ProblemManagerCnf *)pin;
   using namespace PRE;
   Instance<double> ins;

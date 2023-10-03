@@ -34,7 +34,7 @@ public:
   ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
                     std::vector<double> &weightVar, std::vector<Var> &selected,int freevars=0);
   ProblemManagerCnf(ProblemManager *problem);
-  ProblemManagerCnf(std::string &nameFile, std::string &proj_vars);
+  ProblemManagerCnf(std::string &nameFile);
   ~ProblemManagerCnf();
   void normalize() override;
   void normalizeInner() override;

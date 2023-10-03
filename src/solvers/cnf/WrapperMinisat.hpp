@@ -69,5 +69,6 @@ void addClause(std::vector<Lit>& cl,bool learnt);
   void setCountConflict(Var v, double count) override;
   unsigned getNbConflict() override;
   void setReversePolarity(bool value) override;
+  virtual void decay() override;
 };
 }  // namespace d4

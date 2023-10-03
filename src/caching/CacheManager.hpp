@@ -127,10 +127,10 @@ public:
         FactoryException("Cannot create a ProblemManager", __FILE__, __LINE__));
   } // makeCacheManager
 
-  virtual void pushInHashTable(CachedBucket<T> &cb, size_t hashValue,
+  virtual void pushInHashTable(CachedBucket<T> &cb, unsigned hashValue,
                                T val) = 0;
   virtual CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb,
-                                              size_t hashValue) = 0;
+                                              unsigned hashValue) = 0;
   virtual void initHashTable(unsigned maxVar) = 0;
   virtual size_t computeHash( CachedBucket<T>& bucket){
     return hashMethod.hash(bucket.data, bucket.szData());
@@ -206,7 +206,7 @@ public:
 
     CachedBucket<T> *formulaBucket =
         m_bucketManager->collectBucket(varConnected);
-    size_t hashValue =  computeHash(*formulaBucket);
+    unsigned hashValue =  computeHash(*formulaBucket);
     
 
     CachedBucket<T> *cacheBucket =

@@ -17,6 +17,7 @@
  */
 #pragma once
 #include <boost/program_options.hpp>
+#include <functional>
 #include <src/problem/ProblemTypes.hpp>
 #include <src/solvers/ActivityManager.hpp>
 #include <src/solvers/WrapperSolver.hpp>
@@ -38,5 +39,8 @@ public:
                      std::vector<bool> &isDecisionVariable);
 
   Var selectVariable(std::vector<Var> &vars, SpecManager &s);
+  virtual Var selectVariable(std::vector<Var> &vars,
+                             std::function<bool(Var)> can_select);
+  virtual void decay(){}
 };
 } // namespace d4

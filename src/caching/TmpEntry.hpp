@@ -23,12 +23,12 @@ template <class T>
 class TmpEntry {
  public:
   CachedBucket<T> e;
-  size_t hashValue;
+  unsigned hashValue;
   bool defined;
 
   TmpEntry() { defined = false; }
 
-  TmpEntry(CachedBucket<T> e_, size_t hashValue_, bool defined_) {
+  TmpEntry(CachedBucket<T> e_, unsigned hashValue_, bool defined_) {
     e = e_;
     hashValue = hashValue_;
     defined = defined_;

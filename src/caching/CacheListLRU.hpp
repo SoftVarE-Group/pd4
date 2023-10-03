@@ -18,7 +18,9 @@
 #pragma once
 
 #include "src/hashing/hasher.hpp"
+#include <array>
 #include <boost/program_options.hpp>
+#include <optional>
 #include <vector>
 
 #include "BucketManager.hpp"
@@ -32,6 +34,7 @@
 #include <set>
 
 namespace d4 {
+
 namespace po = boost::program_options;
 template <class T> class CacheListLRU : public CacheManager<T> {
 private:
@@ -74,7 +77,7 @@ public:
    * @param hashValue is the hash value of the bucket.
    * @param val is the value we associate with the bucket.
    */
-  inline void pushInHashTable(CachedBucket<T> &cb, size_t hashValue, T val) {
+  inline void pushInHashTable(CachedBucket<T> &cb, unsigned hashValue, T val) {
     hashTable[hashValue % SIZE_HASH].push_back(Node{cb, counter});
     CachedBucket<T> &cbIn = (hashTable[hashValue % SIZE_HASH].back().bucket);
     cbIn.lockedBucket(val);
@@ -129,7 +132,7 @@ public:
    * @param hashValue is the hash value computed from the bucket.
    * @return a valid entry if it is in the cache, null otherwise.
    */
-  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb, size_t hashValue) {
+  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &cb, unsigned hashValue) {
     char *refData = cb.data;
     std::vector<Node> &listCollision = hashTable[hashValue % SIZE_HASH];
     for (auto &cbi : listCollision) {
@@ -204,28 +207,58 @@ public:
 template <class T> class CacheListProbLRU : public CacheManager<T> {
 private:
   struct Node {
-    uint64_t *key;
-    size_t last_use = 0;
+    unsigned key;
+    unsigned last_use;
     T data;
   };
+  std::vector<uint64_t> key_mem;
+  unsigned key_cnt = 0;
+  std::vector<unsigned> free_keys;
   struct Hasher {
-    size_t operator()(const Node &n)const { return n.key[0]; }
+    const CacheListProbLRU<T> *owner;
+    size_t operator()(const Node &n) const { return owner->get_key(n.key)[0]; }
   };
+
+  friend struct Hasher;
   struct KeyEq {
-    size_t key_len;
-    bool operator()(const Node &lhs, const Node &rhs)const {
-      return !memcmp(lhs.key, rhs.key, key_len * sizeof(uint64_t));
+    const CacheListProbLRU<T> *owner;
+    bool operator()(const Node &lhs, const Node &rhs) const {
+      return !memcmp(owner->get_key(lhs.key), owner->get_key(rhs.key),
+                     owner->key_len * sizeof(uint64_t));
     }
   };
+  friend struct KeyEq;
   spp::sparse_hash_set<Node, Hasher, KeyEq> table;
   size_t max_mem = (1ull << 30) * 8; // 8gb
-  size_t key_len = 2;
-  size_t counter = 0;
+  unsigned max_elmts;
+  unsigned key_len = 2;
+  unsigned time = 0;
+  unsigned min_time = 0;
   static std::mt19937_64 gen;
   CLHasher hasher;
   CachedBucket<T> tmp;
 
 public:
+  const uint64_t *get_key(unsigned i) const {
+    size_t k = size_t(i) * key_len;
+    return key_mem.data()+k;
+  }
+  void destroy_key(unsigned i) { free_keys.push_back(i); }
+  std::pair<unsigned, uint64_t *> create_key() {
+    if (free_keys.size()) {
+      unsigned idx = free_keys.back();
+      free_keys.pop_back();
+      return {idx, key_mem.data() + idx * key_len};
+    } else {
+      if(key_cnt== key_mem.size()/key_len){
+          std::cout<<"Realloc keys"<<std::endl;
+          key_mem.resize(key_mem.size()*1.5);
+
+      }
+      unsigned idx = key_cnt++;
+      return {idx, key_mem.data() + idx * key_len};
+    }
+  }
   /**
    * @brief Construct a new Cache List object
    *
@@ -236,10 +269,14 @@ public:
    */
   CacheListProbLRU(po::variables_map &vm, unsigned nbVar, SpecManager *specs,
                    std::ostream &out)
-      : CacheManager<T>(vm, nbVar, specs, out), table(0, Hasher{}, KeyEq{2}) {
-    out << "c [CACHE LIST CONSTRUCTOR]\n";
+      : CacheManager<T>(vm, nbVar, specs, out),
+        table(0, Hasher{this}, KeyEq{this}) {
+    out << "c [CACHE LIST LRU PROB CONSTRUCTOR]\n";
     max_mem = (1ull << 30ull) * vm["cache-fixed-size"].as<int>();
-    std::cout << "Fixed Cache: " << max_mem << std::endl;
+    max_elmts = max_mem / (sizeof(unsigned) + sizeof(uint64_t) * key_len +
+                           sizeof(Node));
+    key_mem.resize(max_elmts*1.5);
+    out << "[CACH LIST LRU ]Fixed Cache: " << max_elmts << std::endl;
     initHashTable(nbVar);
     hasher.init(gen, key_len);
 
@@ -261,45 +298,49 @@ public:
    * @param val is the value we associate with the bucket.
    */
   size_t computeHash(CachedBucket<T> &bucket) final {
-    uint64_t *key = new uint64_t[key_len];
+    auto [id, key] = create_key();
     hasher.Hash(bucket.data, bucket.szData(), key);
     this->m_bucketManager->releaseMemory(bucket.data, bucket.szData());
-
     bucket.data = nullptr;
-
-    return reinterpret_cast<size_t>(key);
+    return id;
   }
-  size_t node_size() { return (sizeof(Node) + sizeof(uint64_t) * key_len); }
-  size_t estimate_mem() { return table.size() * (node_size() + 8); }
-  inline void pushInHashTable(CachedBucket<T> &_cb, size_t hashValue, T val) {
-    uint64_t *key = reinterpret_cast<uint64_t *>(hashValue);
-    table.insert(Node{key, counter, val});
+  inline void pushInHashTable(CachedBucket<T> &_cb, unsigned hashValue, T val) {
+    table.insert(Node{hashValue, time, val});
     this->m_nbCreationBucket++;
-    this->m_sumDataSize += node_size();
+    this->m_sumDataSize += 1;
     this->m_nbEntry++;
-    this->counter++;
-    if (estimate_mem() > max_mem) {
+    this->time++;
+    if (table.size() > max_elmts) {
       std::cout << "Start clean " << table.size() << std::endl;
 
-      std::vector<size_t> last_use;
-      for (auto &b : table) {
-        last_use.push_back(b.last_use);
-      }
-      if (last_use.size() <= 2) {
+      if (table.size() < 8) {
         return;
       }
-      std::sort(last_use.begin(), last_use.end());
-      size_t median = last_use[last_use.size() / 3];
+      std::array<unsigned, 256> hist = {};
+      double dist = time - min_time;
+      for (auto &b : table) {
+        unsigned rtime = b.last_use - min_time;
+        unsigned id = (rtime / dist) * hist.size();
+        hist[id]++;
+      }
+      unsigned acc = 0;
+      unsigned i = 0;
+      while (acc < table.size() / 2 && i < hist.size()) {
+        acc += hist[i];
+        i++;
+      }
+      size_t median = (i * (dist / 256)) + min_time;
       size_t removed = 0;
       for (auto it = table.begin(); it != table.end();) {
         if (it->last_use < median) {
-          delete[] it->key;
+          destroy_key(it->key);
           it = table.erase(it);
           removed++;
         } else {
           it++;
         }
       }
+      min_time = median;
       std::cout << "Removed: " << removed << " Cnt" << table.size()
                 << std::endl;
     }
@@ -314,19 +355,19 @@ public:
    * @param hashValue is the hash value computed from the bucket.
    * @return a valid entry if it is in the cache, null otherwise.
    */
-  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &_cb, size_t hashValue) {
-    uint64_t *key = reinterpret_cast<uint64_t *>(hashValue);
-    auto it = table.find(Node{key});
+  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &_cb, unsigned hashValue) {
+    auto it = table.find(Node{hashValue});
     if (it == table.end()) {
       this->m_nbNegativeHit++;
       return 0;
     } else {
-      *(size_t*)(&it->last_use) = counter;
+       //remove const ...
+      *((unsigned*)&it->last_use) = time;
       tmp.fc = it->data;
 
       this->m_nbPositiveHit++;
 
-      delete[] key;
+      destroy_key(hashValue);
 
       return &tmp;
     }
@@ -364,6 +405,7 @@ public:
     assert(0);
   } // removeEntry
 };
+
 template <typename T>
 std::mt19937_64 CacheListProbLRU<T>::gen = std::mt19937_64(43);
 

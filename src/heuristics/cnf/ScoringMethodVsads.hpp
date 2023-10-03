@@ -30,5 +30,6 @@ class ScoringMethodVsads : public ScoringMethod {
  public:
   ScoringMethodVsads(SpecManagerCnf &o, ActivityManager &a);
   double computeScore(Var v);
+  void decay();
 };
 }  // namespace d4

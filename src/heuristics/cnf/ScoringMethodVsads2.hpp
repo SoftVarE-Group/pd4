@@ -15,32 +15,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
+#include <src/solvers/ActivityManager.hpp>
+#include <src/specs/cnf/SpecManagerCnf.hpp>
 
-#include "ScoringMethodFlowCut.hpp"
-
-#include <limits>
+#include "../ScoringMethod.hpp"
 
 namespace d4 {
+class ScoringMethodVsads2 : public ScoringMethod {
+private:
+  SpecManagerCnf &om;
+  ActivityManager &activity;
 
-/**
-   Constructor.
+public:
+  ScoringMethodVsads2(SpecManagerCnf &o, ActivityManager &a);
+  double computeScore(Var v);
+  Var selectVariable(std::vector<Var> &vars,
+                     std::function<bool(Var)> can_select) final;
+  virtual void decay();
 
-   @param[in] om, the manager that give information about the CNF formula.
- */
-ScoringMethodFlowCut::ScoringMethodFlowCut(SpecManagerCnf &o)
-    : om(o) {} // constructor
-
-/**
-   This scoring function favorises the variables which appear in
-   most clauses.
-
-   @param[in] v, the variable we want the score.
- */
-double ScoringMethodFlowCut::computeScore(Var v) { return 1; }
-
-Var ScoringMethodFlowCut::selectVariable(
-    std::vector<Var> &vars, SpecManager &s,
-    std::vector<bool> &isDecisionVariable) {}
-
+};
 } // namespace d4
-  //

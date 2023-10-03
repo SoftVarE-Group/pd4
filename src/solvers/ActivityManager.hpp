@@ -27,5 +27,6 @@ class ActivityManager {
 
   void setCountConflict(std::vector<double> &counts, unsigned minVar,
                         unsigned maxVar);
+  virtual void decay()=0;
 };
 }  // namespace d4

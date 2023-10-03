@@ -98,6 +98,7 @@ PartitioningHeuristicStaticSingleProj::PartitioningHeuristicStaticSingleProj(
                                         out) {
 
   m_score = ScoringMethod::makeScoringMethod(vm, om, s, out);
+  m_max_cut_ratio = vm["partitioning-heuristic-max-cut-ratio"].as<float>();
 } // constructor
 
 /*
@@ -488,55 +489,75 @@ void PartitioningHeuristicStaticSingleProj::look_ahead(
   }
 }
 
-void PartitioningHeuristicStaticSingleProj::distributePartition(
+int PartitioningHeuristicStaticSingleProj::distributePartition(
     std::vector<std::vector<unsigned>> &hypergraph, std::vector<int> &partition,
     std::vector<unsigned> &mappingEdge, std::vector<Var> &mappingVar,
-    std::vector<Strata> &stack, unsigned &level) {
+    std::vector<Strata> &stack, unsigned &level, std::vector<bool> &is_proj) {
   std::vector<unsigned> cutSet, indicesFirst, indicesSecond;
   hyper_util::splitWrtPartition(m_hypergraph, partition, mappingEdge, cutSet,
                                 indicesFirst, indicesSecond);
+
+  int projV1 = 0;
+  for (auto i : indicesFirst) {
+    Var v = mappingVar[i];
+    projV1 += is_proj[v];
+  }
+  int projV2 = 0;
+  for (auto i : indicesSecond) {
+    Var v = mappingVar[i];
+    projV2 += is_proj[v];
+  }
 
   unsigned fatherId = stack.back().fatherId;
   unsigned currentId = (cutSet.size()) ? level : fatherId;
   stack.pop_back();
 
   if (cutSet.size()) {
-    #if LOG
-    m_log<<"CutSet "<<level<<" : ";
-    for(auto i:cutSet){
-        
-
-
+    int cut_nproj = 0;
+    for (unsigned i : cutSet) {
+      int v = mappingVar[i];
+      cut_nproj += is_proj[v];
     }
-    #endif
-    setCutSetBucketLevelFromEdges(hypergraph, partition, cutSet, mappingVar,
-                                  level);
-    assert(fatherId < m_levelInfo.size());
-    m_levelInfo[fatherId].separatorLevel = level;
+    float ratio = float(cut_nproj) / (projV2 + projV1);
+    if (ratio > m_max_cut_ratio) {
+      std::vector<unsigned> all = indicesFirst;
+      all.insert(all.end(), indicesSecond.begin(), indicesSecond.end());
+      all.insert(all.end(), cutSet.begin(), cutSet.end());
+      assignLevel(hypergraph, currentId, all, mappingVar, level);
+      std::cout << "Cut to large: " << ratio << std::endl;
+      return cutSet.size();
+    } else {
+      setCutSetBucketLevelFromEdges(hypergraph, partition, cutSet, mappingVar,
+                                    level);
+      assert(fatherId < m_levelInfo.size());
+      m_levelInfo[fatherId].separatorLevel = level;
 
-    level++;
-    m_levelInfo.push_back({level, (unsigned)cutSet.size()});
+      level++;
+      m_levelInfo.push_back({level, (unsigned)cutSet.size()});
+    }
   } else {
     // special case 1.
-    if (!indicesFirst.size() && indicesSecond.size())
-      return assignLevel(hypergraph, currentId, indicesSecond, mappingVar,
-                         level);
+    if (!indicesFirst.size() && indicesSecond.size()) {
+      assignLevel(hypergraph, currentId, indicesSecond, mappingVar, level);
+      return 0;
+    }
 
     // special case 2.
-    if (!indicesSecond.size() && indicesFirst.size())
-      return assignLevel(hypergraph, currentId, indicesFirst, mappingVar,
-                         level);
+    if (!indicesSecond.size() && indicesFirst.size()) {
+      assignLevel(hypergraph, currentId, indicesFirst, mappingVar, level);
+      return 0;
+    }
   }
 
-  if (indicesSecond.size() > LIMIT)
+  if (projV2 > LIMIT)
     stack.push_back({currentId, indicesSecond});
   else
     assignLevel(hypergraph, currentId, indicesSecond, mappingVar, level);
-
-  if (indicesFirst.size() > LIMIT)
+  if (projV1 > LIMIT)
     stack.push_back({currentId, indicesFirst});
   else
     assignLevel(hypergraph, currentId, indicesFirst, mappingVar, level);
+  return cutSet.size();
 }
 void PartitioningHeuristicStaticSingleProj::find_bad_vars(
     std::vector<Var> &bad) {}
@@ -601,7 +622,11 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
     }
     is_proj[vec.back()] = sel;
   }
-  float imbalance = 0.5;
+  float imbalance = 0.1;
+  float ratio = float(m_om.nbSelected()) / m_om.getNbVariable();
+  imbalance = std::min(imbalance + (1 - ratio), 0.8f);
+  imbalance = 0.5;
+  std::cout<<"imbalance set to "<<imbalance<<std::endl;
   while (stack.size()) {
     Strata &strata = stack.back();
     std::vector<unsigned> &current = strata.part;
@@ -613,11 +638,12 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
                       considered, stack, level);
     } else {
 
-      m_pm->computePartition(m_hypergraph, Level::QUALITY, partition, 2, imbalance);
+      m_pm->computePartition(m_hypergraph, Level::QUALITY, partition, 2,
+                             imbalance);
 
       // get the cut and split the current set of variables.
-      distributePartition(savedHyperGraph, partition, current, considered,
-                          stack, level);
+      int cut_size = distributePartition(savedHyperGraph, partition, current,
+                                         considered, stack, level, is_proj);
     }
   }
 
