@@ -30,7 +30,7 @@ namespace d4 {
    @param[in] _nbVar, the number of variables in the problem
  */
 SpecManagerCnfDyn::SpecManagerCnfDyn(ProblemManager &p)
-    : SpecManagerCnf(p) {}  // SpecManagerCnfDyn
+    : SpecManagerCnf(p) {} // SpecManagerCnfDyn
 
 /**
    Update the occurrence list w.r.t. a new set of assigned variables.
@@ -39,10 +39,12 @@ SpecManagerCnfDyn::SpecManagerCnfDyn(ProblemManager &p)
 
    @param[in] lits, the new assigned variables
  */
+
 void SpecManagerCnfDyn::preUpdate(std::vector<Lit> &lits) {
   m_reviewWatcher.resize(0);
 
   for (auto &l : lits) {
+    assert(!litIsAssigned(l));
     m_currentValue[l.var()] = l.sign() ? l_False : l_True;
     // not binary clauses.
     for (unsigned i = 0; i < m_occurrence[l.intern()].nbNotBin; i++) {
@@ -58,7 +60,8 @@ void SpecManagerCnfDyn::preUpdate(std::vector<Lit> &lits) {
       int idxCl = m_occurrence[(~l).intern()].notBin[i];
 
       m_infoClauses[idxCl].nbUnsat++;
-      if (m_infoClauses[idxCl].watcher == ~l) m_reviewWatcher.push_back(idxCl);
+      if (m_infoClauses[idxCl].watcher == ~l)
+        m_reviewWatcher.push_back(idxCl);
     }
 
     // binary clauses.
@@ -73,13 +76,15 @@ void SpecManagerCnfDyn::preUpdate(std::vector<Lit> &lits) {
     for (unsigned i = 0; i < m_occurrence[(~l).intern()].nbBin; i++) {
       int idxCl = m_occurrence[(~l).intern()].bin[i];
       m_infoClauses[idxCl].nbUnsat++;
-      if (m_infoClauses[idxCl].watcher == ~l) m_reviewWatcher.push_back(idxCl);
+      if (m_infoClauses[idxCl].watcher == ~l)
+        m_reviewWatcher.push_back(idxCl);
     }
   }
 
   // we search another non assigned literal if requiered
   for (auto &idxCl : m_reviewWatcher) {
-    if (m_infoClauses[idxCl].nbSat) continue;
+    if (m_infoClauses[idxCl].nbSat)
+      continue;
 
     for (auto &l : m_clauses[idxCl]) {
       if (m_currentValue[l.var()] == l_Undef) {
@@ -88,7 +93,77 @@ void SpecManagerCnfDyn::preUpdate(std::vector<Lit> &lits) {
       }
     }
   }
-}  // preUpdate
+} // preUpdate
+void SpecManagerCnfDyn::preUpdate(std::vector<Lit> &lits,
+                                  std::vector<Lit> &pure) {
+  m_reviewWatcher.resize(0);
+
+  for (auto &l : lits) {
+    m_currentValue[l.var()] = l.sign() ? l_False : l_True;
+    // not binary clauses.
+    for (unsigned i = 0; i < m_occurrence[l.intern()].nbNotBin; i++) {
+      int idxCl = m_occurrence[l.intern()].notBin[i];
+      m_infoClauses[idxCl].nbSat++;
+      for (auto &ll : m_clauses[idxCl])
+        if (m_currentValue[ll.var()] == l_Undef) {
+          m_occurrence[ll.intern()].removeNotBin(idxCl);
+          if (!isSelected(ll.var())&&!litIsAssigned(ll) &&m_occurrence[ll.intern()].nbNotBin == 0 &&
+              m_occurrence[ll.intern()].nbBin == 0 &&
+              m_occurrence[(~ll).intern()].nbBin +
+                      m_occurrence[(~ll).intern()].nbNotBin >
+                  0) {
+            pure.push_back(~ll);
+          }
+        }
+    }
+
+    for (unsigned i = 0; i < m_occurrence[(~l).intern()].nbNotBin; i++) {
+      int idxCl = m_occurrence[(~l).intern()].notBin[i];
+
+      m_infoClauses[idxCl].nbUnsat++;
+      if (m_infoClauses[idxCl].watcher == ~l)
+        m_reviewWatcher.push_back(idxCl);
+    }
+
+    // binary clauses.
+    for (unsigned i = 0; i < m_occurrence[l.intern()].nbBin; i++) {
+      int idxCl = m_occurrence[l.intern()].bin[i];
+      m_infoClauses[idxCl].nbSat++;
+      for (auto &ll : m_clauses[idxCl]) {
+        if (m_currentValue[ll.var()] == l_Undef) {
+          m_occurrence[ll.intern()].removeBin(idxCl);
+          if (!isSelected(ll.var())&&!litIsAssigned(ll)&&m_occurrence[ll.intern()].nbBin == 0 &&
+              m_occurrence[ll.intern()].nbNotBin == 0 &&
+              m_occurrence[(~ll).intern()].nbBin +
+                      m_occurrence[(~ll).intern()].nbNotBin >
+                  0) {
+            pure.push_back(~ll);
+          }
+        }
+      }
+    }
+
+    for (unsigned i = 0; i < m_occurrence[(~l).intern()].nbBin; i++) {
+      int idxCl = m_occurrence[(~l).intern()].bin[i];
+      m_infoClauses[idxCl].nbUnsat++;
+      if (m_infoClauses[idxCl].watcher == ~l)
+        m_reviewWatcher.push_back(idxCl);
+    }
+  }
+
+  // we search another non assigned literal if requiered
+  for (auto &idxCl : m_reviewWatcher) {
+    if (m_infoClauses[idxCl].nbSat)
+      continue;
+
+    for (auto &l : m_clauses[idxCl]) {
+      if (m_currentValue[l.var()] == l_Undef) {
+        m_infoClauses[idxCl].watcher = l;
+        break;
+      }
+    }
+  }
+} // preUpdate
 
 /**
    Update the occurrence list w.r.t. a new set of unassigned variables.
@@ -131,6 +206,6 @@ void SpecManagerCnfDyn::postUpdate(std::vector<Lit> &lits) {
 
     m_currentValue[l.var()] = l_Undef;
   }
-}  // postUpdate
+} // postUpdate
 
-}  // namespace d4
+} // namespace d4

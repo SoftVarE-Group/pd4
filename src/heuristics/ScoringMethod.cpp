@@ -20,7 +20,6 @@
 #include "cnf/ScoringMethodDlcs.hpp"
 #include "cnf/ScoringMethodJwts.hpp"
 #include "cnf/ScoringMethodMom.hpp"
-#include "cnf/ScoringMethodPVsads.hpp"
 #include "cnf/ScoringMethodVsads2.hpp"
 #include "cnf/ScoringMethodVsads.hpp"
 #include "cnf/ScoringMethodVsids.hpp"

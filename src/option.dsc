@@ -9,6 +9,7 @@
 ("maxsharpsat-option-and-dig",boost::program_options::value<bool>()->default_value(true),"When a decomposable AND node occurs we search for an instantiation to be able to get a bound.")
 ("maxsharpsat-option-greedy-init",boost::program_options::value<bool>()->default_value(false),"Search for a first max interpretation greedily.")
 ("solver,s", boost::program_options::value<std::string>()->default_value("minisat"), "The solver we will use")
+("projddnnf-pure-lit-elim",boost::program_options::value<bool>()->default_value(true), "pure lit elim")
 ("preproc-solver,ps", boost::program_options::value<std::string>()->default_value("minisat"), "The solver we will use in the preproc")
 ("preproc,p",boost::program_options::value<std::string>()->default_value("basic"), "The preprocessing technique we will use (basic, backbone).")
 ("preproc-equiv",boost::program_options::value<bool>()->default_value(true), "Dont allow variable elimination on none projected variables")

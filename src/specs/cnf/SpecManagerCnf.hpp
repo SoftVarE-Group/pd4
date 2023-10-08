@@ -70,7 +70,6 @@ protected:
 public:
   SpecManagerCnf(ProblemManager &p);
   ~SpecManagerCnf();
-  double computeCleaness();
 
   int computeConnectedComponent(std::vector<std::vector<Var>> &varConnected,
                                 std::vector<Var> &setOfVar,
@@ -115,9 +114,6 @@ public:
   }
   inline int getNbClause(Var v) {
     return getNbClause(Lit::makeLitFalse(v)) + getNbClause(Lit::makeLitTrue(v));
-  }
-  inline int getNbMixedClause(Var v) {
-    return m_occurrence[Lit::makeLitTrue(v).intern()].nbMixed+m_occurrence[Lit::makeLitFalse(v).intern()].nbMixed;
   }
 
   inline unsigned getNbClause(Lit l) {

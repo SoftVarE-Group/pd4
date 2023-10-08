@@ -63,7 +63,7 @@ SpecManagerCnf::SpecManagerCnf(ProblemManager &p) {
   }
 
   // reserve the memory to store the occurrence lists.
-  m_occurrence.resize((m_nbVar + 1) << 1, {NULL, 0, NULL, 0,0});
+  m_occurrence.resize((m_nbVar + 1) << 1, {NULL, 0, NULL, 0});
   m_dataOccurrenceMemory = new int[count];
 
   // construct the occurrence list.
@@ -374,104 +374,6 @@ bool SpecManagerCnf::isNotSatisfiedClauseAndInComponent(
   return m_inCurrentComponent[m_infoClauses[idx].watcher.var()];
 } // isSatisfiedClause
 
-#include "src/utils/UnionFind.hpp"
-double SpecManagerCnf::computeCleaness() {
-  UnionFind uf(m_nbVar + 1);
-  for (auto &cl : m_clauses) {
-    int set = -1;
-    for (auto v : cl) {
-      if (!isSelected(v.var())) {
-        if (set != -1) {
-          uf.union_sets(set, v.var());
-        } else {
-          set = v.var();
-        }
-      }
-    }
-  }
-  std::vector<int> set2idx(m_nbVar + 1, -1);
-  std::vector<std::vector<int>> nproj_sets;
-  std::vector<std::unordered_set<int>> nproj_neigh;
-  for (Var v = m_nbProj + 1; v <= m_nbVar; v++) {
-    int set = uf.find_set(v);
-    int idx = set2idx[set];
-    if (idx == -1) {
-
-      set2idx[set] = nproj_sets.size();
-      nproj_sets.push_back({v});
-    } else {
-      nproj_sets[idx].push_back(v);
-    }
-  }
-  nproj_neigh.resize(nproj_sets.size());
-  int cleanclauses = 0;
-  int mixedclauses = 0;
-  int virtclauses = 0;
-  std::vector<double> mixed_clause;
-  std::vector<int> mixed1(m_nbVar + 1);
-  for (auto &cl : m_clauses) {
-    int set = -1;
-    for (auto v : cl) {
-      if (!isSelected(v.var())) {
-        set = uf.find_set(v.var());
-      }
-    }
-    if (set != -1) {
-      bool mixed = false;
-      for (auto v : cl) {
-        if (isSelected(v.var())) {
-          mixed = true;
-          nproj_neigh[set2idx[set]].insert(v.var());
-        }
-      }
-      if (mixed) {
-        int pcnt = 0, npcnt = 0;
-
-        for (auto v : cl) {
-          if (!isSelected(v.var())) {
-            npcnt++;
-          } else {
-            pcnt++;
-          }
-        }
-        if (pcnt == 1) {
-
-          std::cout << "Mixed: " << pcnt << " " << npcnt << std::endl;
-          for (auto v : cl) {
-            if (isSelected(v.var())) {
-              mixed1[v.var()]++;
-            }
-          }
-        }
-
-        mixedclauses++;
-
-      } else {
-        virtclauses++;
-      }
-    } else {
-      cleanclauses++;
-    }
-  }
-  std::cout << "Cleaness: " << nproj_sets.size() << " Components " << std::endl;
-  std::cout << "Mixed: " << mixedclauses << " Virt: " << virtclauses
-            << " Clean: " << cleanclauses << std::endl;
-  for(auto i:mixed1){
-      if(i>0){
-          std::cout<<i<<", ";
-
-      }
-
-  }
-  std::cout<<std::endl;
-  return 0;
-  for (int i = 0; i < nproj_sets.size(); i++) {
-    auto &set = nproj_sets[i];
-    auto &dep = nproj_neigh[i];
-    std::cout << set.size() << ": " << dep.size() << std::endl;
-  }
-  return 0;
-}
 void SpecManagerCnf::getCurrentClauses(std::vector<unsigned> &idxClauses,
                                        std::vector<Var> &component) {
   idxClauses.resize(0);

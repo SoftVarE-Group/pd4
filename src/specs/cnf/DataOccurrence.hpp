@@ -31,7 +31,6 @@ struct DataOccurrence {
   unsigned nbBin;
   int *notBin;
   unsigned nbNotBin;
-  unsigned nbMixed;
 
   void removeBin(int idx) {
     for (unsigned i = 0; i < nbBin; i++) {
@@ -43,10 +42,6 @@ struct DataOccurrence {
       }
     }
     assert(0);  // we have to remove one element.
-  }
-  void removeMixed(){
-      nbMixed--;
-      assert(nbMixed>=0);
   }
   void removeNotBin(int idx) {
     for (unsigned i = 0; i < nbNotBin; i++) {

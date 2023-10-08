@@ -575,19 +575,28 @@ void Preprocessor<T_data>::pickDefVars(vector<Var> &vars) {
 
   vector<int> freq;
   vector<float> cl_size;
+  vector<bool> is_simpical(ins->vars);
   Graph G(ins->vars, ins->clauses, ins->learnts, freq, cl_size);
+
   for (int i = 0; i < ins->npvars; i++) {
-    if (set.find(i) == set.end() && isVECandidate(G, true, freq, cl_size, i)) {
+    if (set.find(i) == set.end() && isVECandidate(G,false,freq,cl_size,i)) {
       vars.push_back(i);
+      is_simpical[i] = G.isSimplical(i);
     }
   }
   sort(vars.begin(), vars.end(), [&](int a, int b) {
     int ca = freq[toInt(mkLit(a))] * freq[toInt(~mkLit(a))];
     int cb = freq[toInt(mkLit(b))] * freq[toInt(~mkLit(b))];
+    if (config.ve_prefer_simpical) {
+      if ((ca == 0) ^ (cb == 0)) {
+        return ca < cb;
+      }
+      if (is_simpical[a] ^ is_simpical[b]) {
+        return is_simpical[a] > is_simpical[b];
+      }
+    }
     if (ca == cb) {
-      float ca = cl_size[toInt(mkLit(a))] + cl_size[toInt(~mkLit(a))];
-      float cb = cl_size[toInt(mkLit(b))] + cl_size[toInt(~mkLit(b))];
-      return ca > cb;
+      return cl_size[a] > cl_size[b];
     }
     return ca < cb;
   });

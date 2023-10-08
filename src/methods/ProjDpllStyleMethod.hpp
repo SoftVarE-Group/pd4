@@ -46,7 +46,7 @@
 #include "src/utils/Proj.hpp"
 
 #define NB_SEP_MC 104
-#define MASK_SHOWRUN_MC 1048575
+#define MASK_SHOWRUN_MC ((2 << 13) - 1)
 #define WIDTH_PRINT_COLUMN_MC 12
 #define MASK_HEADER 1048575
 
@@ -71,6 +71,7 @@ private:
   bool optDomConst;
   bool optReversePolarity;
   unsigned m_failed_cuts = 0;
+  unsigned m_nb_pure_lits = 0;
   unsigned m_nbCallCall;
   unsigned m_nbSplit;
   unsigned m_callPartitioner;
@@ -116,6 +117,10 @@ private:
   int m_freevars;
   int64_t max_depth = 0;
   int root_comp = -1;
+  int m_frequency = 0;
+  int m_min_depth = 100000000;
+  bool m_pure_lit_elim;
+  std::vector<Lit> m_pure_lits;
 
 public:
   /**
@@ -168,9 +173,11 @@ public:
     */
 
     m_currentPrioritySet.resize(m_problem->getNbVar() + 1, false);
-    double projected_ratio =  double(m_specs->nbSelected()) / double(m_specs->getNbVariable());
-    double clause_var_ratio =  double(m_specs->nbSelected())/((SpecManagerCnf*)m_specs)->getNbClause();
-    if (projected_ratio<0.10| clause_var_ratio>0.5 ) {
+    double projected_ratio =
+        double(m_specs->nbSelected()) / double(m_specs->getNbVariable());
+    double clause_var_ratio = double(m_specs->nbSelected()) /
+                              ((SpecManagerCnf *)m_specs)->getNbClause();
+    if (projected_ratio<0.10 | clause_var_ratio> 0.5) {
       m_hCutSet = PartitioningHeuristic::makePartitioningHeuristicNone(m_out);
     } else {
       m_hCutSet = PartitioningHeuristic::makePartitioningHeuristic(
@@ -192,6 +199,7 @@ public:
     createOperation(vm);
     m_out << "c\n";
     m_var_sign.resize(m_specs->getNbVariable() + 1, 0);
+    m_pure_lit_elim = vm["projddnnf-pure-lit-elim"].as<bool>();
 
   } // constructor
 
@@ -208,8 +216,6 @@ public:
     delete m_hCutSet;
     delete m_cache;
   } // destructor
-  int m_frequency = 0;
-  int m_min_depth = 100000000;
 
 private:
   /**
@@ -351,6 +357,7 @@ private:
     out << "c Number of decision: " << m_nbDecisionNode << "\n";
     out << "c Number of paritioner calls: " << m_callPartitioner << "\n";
     out << "c Number of bad cuts " << m_failed_cuts << "\n";
+    out << "c Number of pure lits  " << m_nb_pure_lits << "\n";
 
     out << "c\n";
     m_cache->printCacheInformation(out);
@@ -414,7 +421,25 @@ private:
     }
 
     m_solver->whichAreUnits(setOfVar.vars, unitsLit); // collect unit literals
-    m_specs->preUpdate(unitsLit);
+
+    m_pure_lits.clear();
+    if (m_pure_lit_elim && setOfVar.nbProj > 10) {
+      m_specs->preUpdate(unitsLit, m_pure_lits);
+
+    } else {
+      m_specs->preUpdate(unitsLit);
+    }
+
+    int nbPure = 0;
+    if (m_pure_lits.size()) {
+      for (auto l : m_pure_lits) {
+        if (!m_specs->litIsAssigned(l)) {
+          m_solver->pushAssumption(l);
+          nbPure++;
+          m_nb_pure_lits++;
+        }
+      }
+    }
 
     // compute the connected composant
     std::vector<ProjVars> varConnected;
@@ -462,11 +487,19 @@ private:
       max_depth -= 1;
       m_min_depth = std::min<int>(max_depth, m_min_depth);
 
+      if (nbPure) {
+        m_solver->popAssumption(nbPure);
+      }
+
       m_specs->postUpdate(unitsLit);
       expelNoDecisionLit(unitsLit);
 
       return m_operation->manageDecomposableAnd(tab, nbComponent);
     } // else we have a tautology
+
+    if (nbPure) {
+      m_solver->popAssumption(nbPure);
+    }
 
     m_specs->postUpdate(unitsLit);
     expelNoDecisionLit(unitsLit);

@@ -437,7 +437,7 @@ class DpllStyleMethod : public MethodManager, public Counter<T> {
     }
 
     // search the next variable to branch on
-    Var v = m_hVar->selectVariable(connected, *m_specs, m_currentPrioritySet);
+    Var v = m_hVar->selectVariable(connected, [&](Var v) {return m_currentPrioritySet[v];});
     if (v == var_Undef) {
       unsetCurrentPriority(cutSet);
       return m_operation->manageTop(connected);
