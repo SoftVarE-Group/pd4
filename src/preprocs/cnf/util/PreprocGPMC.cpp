@@ -253,7 +253,6 @@ template <class T_data> bool Preprocessor<T_data>::MergeAdjEquivs() {
 
         Lit l1 = mkLit(v1);
         Lit l2 = mkLit(v2);
-        int idx1, idx2;
 
         if (S.value(l1) != l_Undef)
           break;

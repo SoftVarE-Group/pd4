@@ -82,7 +82,7 @@ ProblemManager *PreprocProj::run(ProblemManager *pin,
     selected.push_back(i);
   }
   ProblemManagerCnf *out =
-      new ProblemManagerCnf(ins.vars, weightLit, weight, selected);
+      new ProblemManagerCnf(ins.vars+ins.freevars, weightLit, weight, selected,0);
   for (auto &cl : ins.clauses) {
     std::vector<Lit> clause(cl.size());
     for (int i = 0; i < cl.size(); i++) {
