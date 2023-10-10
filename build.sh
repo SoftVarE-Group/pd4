@@ -62,7 +62,7 @@ fi
 
 
 echo building cryptominisat
-if ! [ -f ./3rdParty/cryptominisat/build/lib/libcrytominisat5.so ]
+if ! [ -f ./3rdParty/cryptominisat/build/lib/libcryptominisat5.so ]
 then
     cd $curRep
     cd 3rdParty/cryptominisat
@@ -80,6 +80,14 @@ then
     mkdir -p build
     cd build
     cmake -DCMAKE_CXX_FLAGS="-include cstdint" -DCMAKE_BUILD_TYPE=Release  .. 
+    make -j12
+fi
+
+if ! [ -f ./3rdParty/gmp-6.3.0/.lib/libgmp.a ]
+then
+    cd $curRep
+    cd 3rdParty/gmp-6.3.0
+    ./configure --enable-cxx 
     make -j12
 fi
 
