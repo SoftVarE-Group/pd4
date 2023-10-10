@@ -8,6 +8,7 @@ src/cmake_install.cmake
 scripts/cnfuzz
 scripts/minisat
 scripts/gmon.out
+3rdParty/gmp
 .cache/
 .vscode/
 compile_commands.json

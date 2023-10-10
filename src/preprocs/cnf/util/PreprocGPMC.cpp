@@ -628,7 +628,7 @@ int Preprocessor<T_data>::ElimVars(const vector<Var> &vars) {
           }
         }
       }
-      if (!(min(p, n) <= config.ve_limit+1|| p * n <= n + p)) {
+      if (!(min(p, n) <= config.ve_limit|| p * n <= n + p)) {
         break;
       }
     }

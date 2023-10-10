@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScoringMethodVsads2.hpp"
+#include "ScoringMethodVsads3.hpp"
 
 namespace d4 {
 
@@ -26,7 +26,7 @@ namespace d4 {
    @param[in] o, the specification of a CNF problem.
    @param[in] a, an activity manager linked to a solver.
  */
-ScoringMethodVsads2::ScoringMethodVsads2(SpecManagerCnf &o, ActivityManager &a)
+ScoringMethodVsads3::ScoringMethodVsads3(SpecManagerCnf &o, ActivityManager &a)
     : om(o), activity(a) {} // constructor
 
 /**
@@ -38,39 +38,9 @@ ScoringMethodVsads2::ScoringMethodVsads2(SpecManagerCnf &o, ActivityManager &a)
 
    @param[in] v, the variable we want the score.
  */
-double ScoringMethodVsads2::computeScore(Var v) {
-  throw std::runtime_error("Unsupported operation");
-  return 0;
+double ScoringMethodVsads3::computeScore(Var v) {
+  return activity.getCountConflict(v) + (double)(om.getNbClause(v));
 }
-
-Var ScoringMethodVsads2::selectVariable(std::vector<Var> &vars,
-                                        std::function<bool(Var)> can_select) {
-
-  Var ret = var_Undef;
-  double bestScore_act = -1;
-  int bestScore_freq = -1;
-  for (auto &v : vars) {
-    if (!can_select(v))
-      continue;
-    int freq = om.getNbClause(v);
-    if (ret == var_Undef || freq > bestScore_freq) {
-      ret = v;
-      bestScore_freq = freq;
-      bestScore_act = activity.getActivity(v);
-    } else if (freq == bestScore_freq) {
-      double act = activity.getActivity(v);
-      if (act > bestScore_act) {
-        ret = v;
-        bestScore_act = act;
-      }
-    }
-  }
-  return ret;
-}
-
-void ScoringMethodVsads2::decay(){
-    activity.decay();
-
-}
+void ScoringMethodVsads3::decay() { activity.decay(); }
 
 } // namespace d4

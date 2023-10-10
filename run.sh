@@ -8,7 +8,7 @@ ninja
     -i ~/projects/projected-ddnnf-compilation-eval/instances/fm-real/cars/0.dimacs \
     --crs none \
     -p proj\
-    --sm vsads2\
+    --sm vsads4\
     --cache-alloc std\
     --cache-method lru-prob\
     --cache-fixed-size 8 \

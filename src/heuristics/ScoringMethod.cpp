@@ -21,6 +21,8 @@
 #include "cnf/ScoringMethodJwts.hpp"
 #include "cnf/ScoringMethodMom.hpp"
 #include "cnf/ScoringMethodVsads2.hpp"
+#include "cnf/ScoringMethodVsads3.hpp"
+#include "cnf/ScoringMethodVsads4.hpp"
 #include "cnf/ScoringMethodVsads.hpp"
 #include "cnf/ScoringMethodVsids.hpp"
 #include "src/exceptions/FactoryException.hpp"
@@ -56,6 +58,10 @@ ScoringMethod *ScoringMethod::makeScoringMethod(po::variables_map &vm,
         return new ScoringMethodVsads(ps, am);
       if (meth == "vsads2")
         return new ScoringMethodVsads2(ps, am);
+      if (meth == "vsads3")
+        return new ScoringMethodVsads3(ps, am);
+      if (meth == "vsads4")
+        return new ScoringMethodVsads4(ps, am);
       if (meth == "jwts")
         return new ScoringMethodJwts(ps);
       return NULL;

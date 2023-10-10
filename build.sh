@@ -49,7 +49,7 @@ fi
 
 
 echo building kahypar
-if ! [ -f 3rdParty/kahypar/build/lib/libkahypar.a ]
+if [ ! -f 3rdParty/kahypar/build/lib/libkahypar.a ]
 then
     cd $curRep
     cd 3rdParty/kahypar/
@@ -62,7 +62,7 @@ fi
 
 
 echo building cryptominisat
-if ! [ -f ./3rdParty/cryptominisat/build/lib/libcryptominisat5.so ]
+if [ ! -f ./3rdParty/cryptominisat/build/lib/libcryptominisat5.so ]
 then
     cd $curRep
     cd 3rdParty/cryptominisat
@@ -73,7 +73,7 @@ then
 fi
 
 echo building louvain-community
-if ! [ -f ./3rdParty/louvain-community/build/lib/liblouvain_communities.so  ]
+if [ ! -f ./3rdParty/louvain-community/build/lib/liblouvain_communities.so  ]
 then
     cd $curRep
     cd 3rdParty/louvain-community
@@ -83,16 +83,20 @@ then
     make -j12
 fi
 
-if ! [ -f ./3rdParty/gmp-6.3.0/.lib/libgmp.a ]
+
+echo building gmp
+if [ ! -f "./3rdParty/gmp/lib/libgmp.a" ]
 then
-    cd $curRep
-    cd 3rdParty/gmp-6.3.0
-    ./configure --enable-cxx 
-    make -j12
+    cd /tmp
+    wget https://gmplib.org/download/gmp/gmp-6.3.0.tar.xz
+    tar -xvf gmp-6.3.0.tar.xz
+    cd gmp-6.3.0
+    ./configure --enable-cxx  --prefix=$curRep/3rdParty/gmp/  --enable-fat  CFLAGS="-march=native -O3"  CXXFLAGS="-march=native -O3"  
+    make -j12 install
 fi
 
 echo building arjun
-if ! [ -f ./3rdParty/arjun/build/lib/libarjun.so  ]
+if [ ! -f ./3rdParty/arjun/build/lib/libarjun.so  ]
 then
     cd $curRep
     cd 3rdParty/arjun
@@ -104,7 +108,7 @@ fi
 
 
 echo building mt-kahypar
-if ! [ -f 3rdParty/mt-kahypar/build/lib/libmtkahypar.so ]
+if  [ ! -f 3rdParty/mt-kahypar/build/lib/libmtkahypar.so ]
 then
     cd $curRep
     cd 3rdParty/mt-kahypar
