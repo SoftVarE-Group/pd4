@@ -18,7 +18,7 @@
 ("preproc-ve-prefer-simpical",boost::program_options::value<bool>()->default_value(false), "only apply ve to simpical")
 ("preproc-ve-limit",boost::program_options::value<int>()->default_value(4), "ve occurrence limit")
 ("scoring-method,sm",boost::program_options::value<std::string>()->default_value("vsads"),"The scoring method used for selecting the next variable. [mom, dlcs, vsids, vsads, jwts]")
-("scoring-method-decay-freq",boost::program_options::value<unsigned>()->default_value(30000),"decay ferquency")
+("scoring-method-decay-freq",boost::program_options::value<unsigned>()->default_value(300000),"decay ferquency")
 ("occurrence-manager,om",boost::program_options::value<std::string>()->default_value("dynamic"),"The occurrence manager used. [add a description]")
 ("phase-heuristic,ph",boost::program_options::value<std::string>()->default_value("polarity"),"The way the phase of the next decision is selected (false, true, polarity or occurrence).")
 ("partitioning-heuristic,pvh",boost::program_options::value<std::string>()->default_value("decomposition-static-dual"),"The method used to compute a cut. [none, decomposition-static, bipartition-primal or bipartition-dual]")

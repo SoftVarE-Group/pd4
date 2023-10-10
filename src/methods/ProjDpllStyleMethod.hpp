@@ -628,6 +628,10 @@ private:
 
       DataBranch<U> b = {};
       b.d = m_operation->createTop();
+      for (int i = m_problem->getNbVar() + 1;
+           i < m_problem->getNbVar() + 1 + m_freevars; i++) {
+        b.freeVars.push_back(i);
+      }
       return m_operation->manageBranch(b);
     }
     if (m_problem->isUnsat() ||
@@ -637,6 +641,10 @@ private:
 
     DataBranch<U> b;
     b.d = compute_(setOfVar, b.unitLits, b.freeVars, out);
+    for (int i = m_problem->getNbVar() + 1;
+         i < m_problem->getNbVar() + 1 + m_freevars; i++) {
+      b.freeVars.push_back(i);
+    }
     return m_operation->manageBranch(b);
   } // compute
 

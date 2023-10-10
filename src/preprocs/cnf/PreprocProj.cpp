@@ -78,16 +78,15 @@ ProblemManager *PreprocProj::run(ProblemManager *pin,
   for (unsigned i = 0; i <= ins.vars + ins.freevars; i++)
     weight[i] = weightLit[i << 1] + weightLit[(i << 1) + 1];
   std::vector<Var> selected;
-  for (Var i = 1; i <= ins.npvars+ins.freevars; i++) {
+  for (Var i = 1; i <= ins.npvars; i++) {
     selected.push_back(i);
   }
   ProblemManagerCnf *out =
-      new ProblemManagerCnf(ins.vars+ins.freevars, weightLit, weight, selected,0);
+      new ProblemManagerCnf(ins.vars, weightLit, weight, selected,ins.freevars);
   for (auto &cl : ins.clauses) {
     std::vector<Lit> clause(cl.size());
     for (int i = 0; i < cl.size(); i++) {
-      bool is_proj = Glucose::var(cl[i])<ins.npvars; 
-      clause[i] = Lit::makeLit(Glucose::var(cl[i]) + 1+(is_proj?0:ins.freevars), Glucose::sign(cl[i]));
+      clause[i] = Lit::makeLit(Glucose::var(cl[i])+1, Glucose::sign(cl[i]));
     }
     out->getClauses().push_back(clause);
   }
