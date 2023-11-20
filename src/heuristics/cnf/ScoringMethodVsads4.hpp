@@ -22,6 +22,8 @@
 #include "../ScoringMethod.hpp"
 
 namespace d4 {
+//Weightless VSADS scoring implementation
+
 class ScoringMethodVsads4 : public ScoringMethod {
 private:
   SpecManagerCnf &om;

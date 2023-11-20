@@ -17,6 +17,7 @@ PreprocProj::PreprocProj(po::variables_map &vm, std::ostream &out) {
   config.ve_only_simpical = vm["preproc-ve-only-simpical"].as<bool>();
   config.ve_prefer_simpical = vm["preproc-ve-prefer-simpical"].as<bool>();
   config.ve_limit = vm["preproc-ve-limit"].as<int>();
+  keep_map = vm.contains("dump-gmap");
 } // constructor
 
 /**
@@ -34,7 +35,7 @@ PreprocProj::~PreprocProj() { delete ws; } // destructor
 ProblemManager *PreprocProj::run(ProblemManager *pin,
                                  LastBreathPreproc &lastBreath) {
 
-  //TODO remove, only for testing
+  // TODO remove, only for testing
   if (pin->getSelectedVar().empty()) {
     for (int i = 1; i <= pin->getNbVar(); i++) {
       pin->getSelectedVar().push_back(i);
@@ -67,8 +68,12 @@ ProblemManager *PreprocProj::run(ProblemManager *pin,
     for (int i = 0; i < ins.npvars; i++)
       ins.gmap.push_back(Glucose::mkLit(i));
   }
+  ins.keepVarMap = keep_map;
+  
+    
   Preprocessor<double> preproc;
   preproc.setConfig(config);
+
   preproc.Simplify(&ins);
   if (ins.unsat) {
     return in->getUnsatProblem();
@@ -81,12 +86,29 @@ ProblemManager *PreprocProj::run(ProblemManager *pin,
   for (Var i = 1; i <= ins.npvars; i++) {
     selected.push_back(i);
   }
-  ProblemManagerCnf *out =
-      new ProblemManagerCnf(ins.vars, weightLit, weight, selected,ins.freevars);
+  ProblemManagerCnf *out = new ProblemManagerCnf(ins.vars, weightLit, weight,
+                                                 selected, ins.freevars);
+
+  if (keep_map) {
+    out->gmap().resize(ins.gmap.size());
+    for (int i = 0; i < ins.gmap.size(); i++) {
+      if (ins.gmap[i] == Glucose::lit_Undef) {
+        out->gmap()[i] = lit_Undef;
+      } else {
+        out->gmap()[i] = Lit::makeLit(Glucose::var(ins.gmap[i]) + 1,
+                                      Glucose::sign(ins.gmap[i]));
+      }
+    }
+    std::cout<<"Fixed Lits: "<<std::endl;
+    for(auto i: ins.fixedLits){
+        std::cout<<(Glucose::sign(i)?"-":" ")<<Glucose::var(i)+1<<" ,";
+    }
+  }
+
   for (auto &cl : ins.clauses) {
     std::vector<Lit> clause(cl.size());
     for (int i = 0; i < cl.size(); i++) {
-      clause[i] = Lit::makeLit(Glucose::var(cl[i])+1, Glucose::sign(cl[i]));
+      clause[i] = Lit::makeLit(Glucose::var(cl[i]) + 1, Glucose::sign(cl[i]));
     }
     out->getClauses().push_back(clause);
   }

@@ -3,6 +3,7 @@
 #include "src/specs/cnf/SpecManagerCnf.hpp"
 #include <memory>
 namespace d4 {
+//TODO delete this since its useless
 class ProjBackupHeuristic {
 public:
   virtual ~ProjBackupHeuristic() {}

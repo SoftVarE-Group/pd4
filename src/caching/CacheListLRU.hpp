@@ -34,6 +34,10 @@
 #include <set>
 
 namespace d4 {
+// (Probalistic) LRU cache implementations, the integration into D4's
+// interface is very cluncky and prone to bugs since it 
+// depends on depth-first free/alloc behavior from DPLL. 
+// Should be rewritten...
 
 namespace po = boost::program_options;
 template <class T> class CacheListLRU : public CacheManager<T> {
@@ -204,6 +208,9 @@ public:
   } // removeEntry
 };
 
+/**
+ *
+ */
 template <class T> class CacheListProbLRU : public CacheManager<T> {
 private:
   struct Node {
@@ -241,7 +248,7 @@ private:
 public:
   const uint64_t *get_key(unsigned i) const {
     size_t k = size_t(i) * key_len;
-    return key_mem.data()+k;
+    return key_mem.data() + k;
   }
   void destroy_key(unsigned i) { free_keys.push_back(i); }
   std::pair<unsigned, uint64_t *> create_key() {
@@ -250,10 +257,9 @@ public:
       free_keys.pop_back();
       return {idx, key_mem.data() + idx * key_len};
     } else {
-      if(key_cnt== key_mem.size()/key_len){
-          std::cout<<"Realloc keys"<<std::endl;
-          key_mem.resize(key_mem.size()*1.5);
-
+      if (key_cnt == key_mem.size() / key_len) {
+        std::cout << "Realloc keys" << std::endl;
+        key_mem.resize(key_mem.size() * 1.5);
       }
       unsigned idx = key_cnt++;
       return {idx, key_mem.data() + idx * key_len};
@@ -273,9 +279,9 @@ public:
         table(0, Hasher{this}, KeyEq{this}) {
     out << "c [CACHE LIST LRU PROB CONSTRUCTOR]\n";
     max_mem = (1ull << 30ull) * vm["cache-fixed-size"].as<int>();
-    max_elmts = max_mem / (sizeof(unsigned) + sizeof(uint64_t) * key_len +
-                           sizeof(Node));
-    key_mem.resize(max_elmts*1.5);
+    max_elmts = max_mem /
+                (sizeof(unsigned) + sizeof(uint64_t) * key_len + sizeof(Node));
+    key_mem.resize(max_elmts * 1.5);
     out << "[CACH LIST LRU ]Fixed Cache: " << max_elmts << std::endl;
     initHashTable(nbVar);
     hasher.init(gen, key_len);
@@ -355,14 +361,15 @@ public:
    * @param hashValue is the hash value computed from the bucket.
    * @return a valid entry if it is in the cache, null otherwise.
    */
-  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &_cb, unsigned hashValue) {
+  CachedBucket<T> *bucketAlreadyExist(CachedBucket<T> &_cb,
+                                      unsigned hashValue) {
     auto it = table.find(Node{hashValue});
     if (it == table.end()) {
       this->m_nbNegativeHit++;
       return 0;
     } else {
-       //remove const ...
-      *((unsigned*)&it->last_use) = time;
+      // remove const ...
+      *((unsigned *)&it->last_use) = time;
       tmp.fc = it->data;
 
       this->m_nbPositiveHit++;

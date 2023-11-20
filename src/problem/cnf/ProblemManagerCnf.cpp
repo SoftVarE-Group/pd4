@@ -59,6 +59,7 @@ ProblemManagerCnf::ProblemManagerCnf(ProblemManager *problem) {
   m_indVar = problem->getIndVar();
   m_isUnsat = false;
   m_nbFreeVars = problem->freeVars();
+  m_gmap = problem->gmap();
 
 
 } // constructor

@@ -586,6 +586,8 @@ private:
 
     Lit l = Lit::makeLit(v, m_hPhase->selectPhase(v));
     m_nbDecisionNode++;
+    // manual decay frequency take from sharpsat-TD
+    // not sure if this is useful...
     if (m_nbDecisionNode % m_decay_frequency == 0) {
       m_hVar->decay();
     }
@@ -700,13 +702,24 @@ public:
     if (vm.count("dump-gmap")) {
       std::ofstream outFile;
       std::string fileName = vm["dump-gmap"].as<std::string>();
+
+      m_out << "writting gmap to " << fileName << std::endl;
       outFile.open(fileName);
-      for(auto l:m_problem->gmap()){
-          if(l.sign()){
-              outFile<<"-";
+      int i = 1;
+      for (auto l : m_problem->gmap()) {
+        if (l != lit_Undef) {
+          outFile<<i++<<":";
+          if (l.sign()) {
+            outFile << "-";
           }
-          outFile<<l.var();
-          outFile<<" ";
+          outFile << l.var();
+          outFile << " ";
+        }
+        else{
+          outFile << "?";
+          outFile << " ";
+
+        }
       }
       outFile.close();
     }

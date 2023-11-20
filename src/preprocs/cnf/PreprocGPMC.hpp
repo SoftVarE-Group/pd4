@@ -8,7 +8,7 @@
 
 
 namespace d4{
-
+// Use GPMCs preproc in D4
 class PreprocGPMC:public PreprocManager{
 
   WrapperSolver *ws;

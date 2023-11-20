@@ -22,6 +22,8 @@
 #include "../ScoringMethod.hpp"
 
 namespace d4 {
+
+//GPMCs VSADS scoring implementation without tree decomposition 
 class ScoringMethodVsads3 : public ScoringMethod {
  private:
   SpecManagerCnf &om;

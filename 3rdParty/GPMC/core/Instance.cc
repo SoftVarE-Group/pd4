@@ -151,6 +151,7 @@ void Instance<T_data>::load(istream& in, bool weighted, bool projected, bool kee
 
 	if(keepVarMap) {
 		gmap.clear();
+
 		if(projected) {
 			for(auto v : pvars)
 				gmap.push_back(mkLit(v));
