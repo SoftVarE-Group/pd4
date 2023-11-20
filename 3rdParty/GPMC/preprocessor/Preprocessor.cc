@@ -444,7 +444,7 @@ template <class T_data>
 inline bool
 Preprocessor<T_data>::isVECandidate(Graph &G, bool def, vector<int> &freq,
                                     std::vector<float> &cl_size, int i) const {
-  return (((!def) || G.isSimplical(i)) &&
+  return (G.isSimplical(i) &&
           min(freq[toInt(mkLit(i))], freq[toInt(~mkLit(i))]) <= 4) ||
          (config.ve_more && (freq[toInt(mkLit(i))] * freq[toInt(~mkLit(i))] <=
                              freq[toInt(mkLit(i))] + freq[toInt(~mkLit(i))]));
@@ -465,12 +465,6 @@ template <class T_data> void Preprocessor<T_data>::pickVars(vector<Var> &vars) {
   sort(vars.begin(), vars.end(), [&](int a, int b) {
     int ca = freq[toInt(mkLit(a))] * freq[toInt(~mkLit(a))];
     int cb = freq[toInt(mkLit(b))] * freq[toInt(~mkLit(b))];
-    if ((ca == 0) ^ (cb == 0)) {
-      return ca < cb;
-    }
-    if (G.isSimplical(a) ^ G.isSimplical(b)) {
-      return G.isSimplical(a) > G.isSimplical(b);
-    }
     if (ca == cb) {
       return cl_size[a] > cl_size[b];
     }
@@ -628,8 +622,8 @@ int Preprocessor<T_data>::ElimVars(const vector<Var> &vars) {
           }
         }
       }
-      if(!(min(p,n)<=4||p*n<=n+p)){
-          break;
+      if (!(min(p, n) <= 4 || p * n <= n + p)) {
+        break;
       }
     }
     vector<vector<Lit>> pos;

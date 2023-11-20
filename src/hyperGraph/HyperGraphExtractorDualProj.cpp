@@ -64,7 +64,7 @@ void HyperGraphExtractorDualProj::constructHyperGraph(
   for (auto &vec : equivVar) {
     unsigned &size = hypergraph[pos++];
     size = 0;
-    int cost = INT_MAX;
+    int cost = m_nproj_cost;
 
     for (auto &v : vec) {
       if (om.varIsAssigned(v))

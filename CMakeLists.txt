@@ -23,9 +23,10 @@ file(GLOB_RECURSE INCLUDES ./src/**.hpp)
 set(SRCS ${SOURCES})
 set(HEADERS ${INCLUDES})
 
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 set(Boost_USE_STATIC_LIBS ON)
 link_directories(${CMAKE_SOURCE_DIR}/3rdParty/arjun/build/lib)
-#add_subdirectory(3rdParty/GPMC)
+add_subdirectory(3rdParty/GPMC)
 
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}/3rdParty)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/3rdParty/cryptominisat/build/include)
@@ -75,7 +76,7 @@ elseif(${BUILD_MODE} EQUAL 3)
   message("Library creation")
   add_library(d4 ${SRCS} ${HEADERS})
 
-  target_compile_options(d4 PUBLIC -DNOMAIN -std=c++20 -Wall -ma -O3 -Wno-class-memaccess -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses -D NDEBUG)
+  target_compile_options(d4 PUBLIC -DNOMAIN -std=c++20 -Wall -O3 -Wno-class-memaccess -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses -D NDEBUG)
   target_link_libraries (d4 -lz -O3 -lgmpxx -lgmp ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a -D NDEBUG ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
   target_include_directories (d4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -84,17 +85,20 @@ elseif(${BUILD_MODE} EQUAL 3)
 else()  
 
 # create an executable
-#add_compile_options(-fsanitize=address)
-#       add_link_options(-fsanitize=address)
     add_executable(d4 ${SRCS} ${HEADERS})
 
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-fsanitize=address)
+        add_link_options(-fsanitize=address)
+    endif()
+
     message("Classical mode activated")
-    target_compile_options(d4 PUBLIC -Wall -std=c++20 -O3 -Wno-class-memaccess -march=native -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses -march=native)
+    target_compile_options(d4 PUBLIC -Wall -std=c++20  -Wno-class-memaccess -march=native -Wno-format -Wno-misleading-indentation -Wno-literal-suffix -Wno-sign-compare -Wno-parentheses)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/arjun/build/lib/libarjun.so)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/cryptominisat/build/lib/libcryptominisat5.so)
     target_link_libraries(d4 ${CMAKE_SOURCE_DIR}/3rdParty/mt-kahypar/build/lib/libmtkahypar.so )
 
-    target_link_libraries (d4 -lz ${CMAKE_SOURCE_DIR}/3rdParty/gmp/lib/libgmp.a  ${CMAKE_SOURCE_DIR}/3rdParty/gmp/lib/libgmpxx.a  ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} 
+    target_link_libraries (d4 -lz gpmc -lgmp -lgmpxx ${CMAKE_SOURCE_DIR}/3rdParty/kahypar/build/lib/libkahypar.a ${Boost_LIBRARIES} 
         ${CMAKE_SOURCE_DIR}/3rdParty/patoh/libpatoh.a 
         ${CMAKE_SOURCE_DIR}/3rdParty/glucose-3.0/core/lib_standard.a)
 

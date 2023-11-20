@@ -427,8 +427,8 @@ template <class T_data> bool Preprocessor<T_data>::VariableEliminate(bool dve) {
 template <class T_data>
 inline bool
 Preprocessor<T_data>::isVECandidate(Graph &G, bool def, vector<int> &freq,
-                                    std::vector<float> &cl_size, int i) const {
-  return (((!def && !config.ve_only_simpical) || G.isSimplical(i)) &&
+                                    std::vector<double> &cl_size, int i) const {
+  return (((!def&& !config.ve_only_simpical) || G.isSimplical(i)) &&
           min(freq[toInt(mkLit(i))], freq[toInt(~mkLit(i))]) <=
               config.ve_limit) ||
          (config.ve_more && (freq[toInt(mkLit(i))] * freq[toInt(~mkLit(i))] <=
@@ -439,7 +439,7 @@ template <class T_data> void Preprocessor<T_data>::pickVars(vector<Var> &vars) {
   vars.clear();
 
   vector<int> freq;
-  vector<float> cl_size;
+  vector<double> cl_size;
   vector<bool> is_simpical(ins->vars);
   Graph G(ins->vars, ins->clauses, ins->learnts, freq, cl_size);
 
@@ -573,7 +573,7 @@ void Preprocessor<T_data>::pickDefVars(vector<Var> &vars) {
   std::unordered_set<uint32_t> set(indpendent.begin(), indpendent.end());
 
   vector<int> freq;
-  vector<float> cl_size;
+  vector<double> cl_size;
   vector<bool> is_simpical(ins->vars);
   Graph G(ins->vars, ins->clauses, ins->learnts, freq, cl_size);
 

@@ -59,6 +59,7 @@ ProblemManager *PreprocBasicCnf::run(ProblemManager *pin,
   ws->getUnits(units);
   auto out  =pin->getConditionedFormula(units);
   out->normalize();
+  out->freeVars() = 0;
   return out;
 }  // run
 }  // namespace d4

@@ -321,7 +321,7 @@ Graph::Graph(int vars, const vector<vector<Glucose::Lit>>& clauses, const vector
 	}
 }
 
-Graph::Graph(int vars, const vector<vector<Glucose::Lit>>& clauses, const vector<vector<Glucose::Lit>>& learnts, vector<int>& freq,std::vector<float>& cl_size)
+Graph::Graph(int vars, const vector<vector<Glucose::Lit>>& clauses, const vector<vector<Glucose::Lit>>& learnts, vector<int>& freq,std::vector<double>& cl_size)
 {
 	clear();
 	init(vars);

@@ -82,6 +82,13 @@ public:
   void showFormula(std::ostream &out) override;
   void showCurrentFormula(std::ostream &out) override;
   void showTrail(std::ostream &out) override;
+  void freeVars(std::vector<Var> &component, std::vector<Var> &free) {
+    for (auto v : component) {
+      if (getNbClause(v) == 0) {
+        free.push_back(v);
+      }
+    }
+  }
 
   int getInitSize(int i) { return m_clauses[i].size(); }
   int getCurrentSize(int i) {
@@ -150,7 +157,7 @@ public:
     return m_clauses[idx];
   }
 
-  // about the assignment.
+  // about the asdssignment.
   inline bool varIsAssigned(Var v) override {
     return m_currentValue[v] != l_Undef;
   }

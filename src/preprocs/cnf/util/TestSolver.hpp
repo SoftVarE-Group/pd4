@@ -16,7 +16,7 @@ public:
 
   Graph(int vars, const std::vector<std::vector<Glucose::Lit>> &clauses,
         const std::vector<std::vector<Glucose::Lit>> &learnts,
-        std::vector<int> &freq, std::vector<float> &cl_size);
+        std::vector<int> &freq, std::vector<double> &cl_size);
 
   void init(int n);
   void clear();

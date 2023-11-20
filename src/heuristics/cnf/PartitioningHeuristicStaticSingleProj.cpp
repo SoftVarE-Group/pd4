@@ -644,6 +644,7 @@ void PartitioningHeuristicStaticSingleProj::computeDecomposition(
       // get the cut and split the current set of variables.
       int cut_size = distributePartition(savedHyperGraph, partition, current,
                                          considered, stack, level, is_proj);
+      std::cout<<"Cutsize: "<<cut_size<<std::endl;
     }
   }
 

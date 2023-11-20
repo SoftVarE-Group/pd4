@@ -34,7 +34,6 @@ struct ConfigPreprocessor {
 	// CS
 	bool cs;
     ConfigPreprocessor(){
-
 	    varlimit = 200000;
 	    timelim = 120;
 	    reps = 20;
@@ -131,7 +130,7 @@ private:
 	void RewriteClauses(std::vector<std::vector<Glucose::Lit>>& cls, const std::vector<Glucose::Lit>& map);
 	void Subsume();
 
-	bool isVECandidate(Graph& G,bool simple, std::vector<int>& freq,std::vector<float>& cl_size, int i) const;
+	bool isVECandidate(Graph& G,bool simple, std::vector<int>& freq,std::vector<double>& cl_size, int i) const;
 
 	void printCNFInfo(const char* ppname = "", bool initial = false);
 

@@ -27,8 +27,6 @@ class ProblemManagerCnf : public ProblemManager {
 protected:
   std::vector<std::vector<Lit>> m_clauses;
   std::vector<std::vector<Lit>> m_learnt;
-  IDIDFunc m_projMap;
-  int m_freevars;
 public:
   ProblemManagerCnf();
   ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
@@ -42,13 +40,11 @@ public:
   void display(std::ostream &out) override;
   std::vector<std::vector<Lit>> &getClauses() { return m_clauses; }
   std::vector<std::vector<Lit>> &getLearnt() { return m_learnt; }
-  IDIDFunc &getProjMap() { return m_projMap; }
   void setClauses(std::vector<std::vector<Lit>> &clauses) {
     m_clauses = clauses;
   }
   void displayStat(std::ostream &out, std::string startLine) override;
   ProblemManager *getUnsatProblem() override;
   ProblemManager *getConditionedFormula(std::vector<Lit> &units) override;
-  int freeVars() override;
 };
 } // namespace d4

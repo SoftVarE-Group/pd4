@@ -21,6 +21,7 @@
 #include "cnf/PreprocBasicCnf.hpp"
 #include "cnf/PreprocProj.hpp"
 #include "src/exceptions/FactoryException.hpp"
+#include "cnf/PreprocGPMC.hpp"
 
 namespace d4 {
 
@@ -40,6 +41,7 @@ PreprocManager *PreprocManager::makePreprocManager(po::variables_map &vm,
     if (meth == "basic") return new PreprocBasicCnf(vm, out);
     if (meth == "backbone") return new PreprocBackboneCnf(vm, out);
     if (meth == "proj") return new PreprocProj(vm, out);
+    if (meth == "gpmc") return new PreprocGPMC(vm, out);
   }
 
   throw(FactoryException("Cannot create a PreprocManager", __FILE__, __LINE__));

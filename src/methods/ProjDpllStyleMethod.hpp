@@ -697,6 +697,19 @@ public:
     U result = compute(setOfVar, m_out);
     printFinalStats(m_out);
     m_operation->manageResult(result, vm, m_out);
+    if (vm.count("dump-gmap")) {
+      std::ofstream outFile;
+      std::string fileName = vm["dump-gmap"].as<std::string>();
+      outFile.open(fileName);
+      for(auto l:m_problem->gmap()){
+          if(l.sign()){
+              outFile<<"-";
+          }
+          outFile<<l.var();
+          outFile<<" ";
+      }
+      outFile.close();
+    }
   } // run
 };
 } // namespace d4

@@ -58,7 +58,7 @@ ProblemManagerCnf::ProblemManagerCnf(ProblemManager *problem) {
   m_maxVar = problem->getMaxVar();
   m_indVar = problem->getIndVar();
   m_isUnsat = false;
-  m_freevars = problem->freeVars();
+  m_nbFreeVars = problem->freeVars();
 
 
 } // constructor
@@ -80,7 +80,7 @@ ProblemManagerCnf::ProblemManagerCnf(int nbVar, std::vector<double> &weightLit,
   m_weightVar = weightVar;
   m_selected = selected;
   m_isUnsat = false;
-  m_freevars = freevars;
+  m_nbFreeVars = freevars;
 } // constructor
 
 /**
@@ -93,23 +93,27 @@ ProblemManagerCnf::~ProblemManagerCnf() {
 
 void ProblemManagerCnf::normalize() {
   if (m_selected.size() != m_nbVar) {
-    m_projMap = IDIDFunc(m_nbVar + 1, m_nbVar + 1);
-    Var i = 1;
-    std::vector<bool> marked(m_nbVar);
+    std::vector<bool> marked(m_nbVar+1);
+    std::vector<Var> remap(m_nbVar+1);
+    int i = 1;
     for (Var v : m_selected) {
-      m_projMap[v] = i;
       marked[v] = true;
-      i++;
     }
-    for (Var v = 1; v < m_nbVar + 1; v++) {
+    for (Var v = 1; v <= m_nbVar; v++) {
+      if (marked[v]) {
+        remap[v] = i;
+        i++;
+      }
+    }
+    for (Var v = 1; v <= m_nbVar; v++) {
       if (!marked[v]) {
-        m_projMap[v] = i;
+        remap[v] = i;
         i++;
       }
     }
     for (auto &c : m_clauses) {
       for (auto &l : c) {
-        l = Lit::makeLit(m_projMap[l.var()], l.sign());
+        l = Lit::makeLit(remap[l.var()], l.sign());
       }
     }
     int sel = m_selected.size();
@@ -118,7 +122,6 @@ void ProblemManagerCnf::normalize() {
       m_selected.push_back(i);
     }
   }
-  normalizeInner();
 }
 
 void ProblemManagerCnf::normalizeInner() {
@@ -192,7 +195,6 @@ ProblemManagerCnf::getConditionedFormula(std::vector<Lit> &units) {
    @param[out] out, the stream where the messages are redirected.
  */
 
-int ProblemManagerCnf::freeVars() { return m_freevars; }
 void ProblemManagerCnf::display(std::ostream &out) {
   out << "weight list: ";
   for (unsigned i = 1; i <= m_nbVar; i++) {
