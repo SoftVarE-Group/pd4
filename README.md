@@ -30,12 +30,7 @@ To build the project execute the build script which also handles building the su
 ```console
 $ ./build.sh
 ```
-
 The executable is called d4 and is in the build repository.
-
-```console
-$ ./build/d4 -h
-```
 
 ## Running
 
@@ -52,7 +47,12 @@ c p show 1 2 3 0
 ```
 
 ### Command
-This command produces a projected d-DNNF for the input file `input.cnf`
+This command produces a projected d-DNNF for the input file `input.cnf` and stores it in `output.nnf`
 ```console
-./build/d4 -i input.cnf -m proj-ddnnf-compiler 
+./build/d4 -i input.cnf -m proj-ddnnf-compiler --dump-ddnnf output.nnf
+```
+
+Display overview on commands and available options
+```console
+$ ./build/d4 -h
 ```
