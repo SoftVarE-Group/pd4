@@ -1,11 +1,32 @@
-# d4 project
+# pd4 - An Extension of d4 for Projected d-DNNF Compilation
 
 # How to Compile
 
-In order to compile the project cmake (version>=3.1) and ninja have to
-be installed. The following command lines then build and compile the
-project.
 
+## Dependencies
+This repository includes several sub-repositories. So, make sure to clone the repository with:
+```console
+$ git clone --recurse-submodules <GIT-URL>
+```
+In addition, all of the listed dependencies are required to compile pd4.
+
+* Build system
+  * cmake (Version >= 3.1)
+  * ninja
+  * gcc/g++
+* Libraries
+  * zlib
+  * m4
+  * gmp
+  * boost (static)
+  * hwloc
+  * lzma
+  * bzip2
+  * libstd
+  * tbb
+
+## Building
+To build the project execute the build script which also handles building the submodules.
 ```console
 $ ./build.sh
 ```
@@ -16,8 +37,22 @@ The executable is called d4 and is in the build repository.
 $ ./build/d4 -h
 ```
 
-The following command line is to solve WeightedMax#SAT instances as in [this article](https://drops.dagstuhl.de/opus/volltexte/2022/16702/pdf/LIPIcs-SAT-2022-28.pdf). We note that all options are the default ones, with file.wcnf being the input file. 
+## Running
 
+### Input Format
+The input format for projected d-DNNF compilation is DIMACS with an established extension for projected variables.
+With the extension, the second line indicates the variable to keep during the projection. Invoking pd4 with the listed input will provide a projected d-DNNF only with the variables 1 2 3.
+
+```
+p cnf 4 3
+c p show 1 2 3 0
+3 1 2 0
+−2 1 3 0
+2 −3 2 4 0
+```
+
+### Command
+This command produces a projected d-DNNF for the input file `input.cnf`
 ```console
-$ ./build/d4 -i file.wcnf -m max#sat --float 1 --maxsharpsat-option-and-dig 1 --maxsharpsat-option-greedy-init 0 --maxsharpsat-heuristic-phase-random 5 --maxsharpsat-heuristic-phase best
+./build/d4 -i input.cnf -m proj-ddnnf-compiler 
 ```
